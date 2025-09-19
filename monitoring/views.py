@@ -17,6 +17,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .decorators import admin_required, user_required
 from .mixins import RoleBasedPermission, IsAdminUser, IsUser
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Reading
+from .serializers import ReadingSerializer
+
 import json
 
 User = get_user_model()
@@ -119,9 +124,28 @@ def logout_view(request):
 @user_required
 def dashboard_view(request):
     user_role = request.user.role
+    # Lấy 20 bản ghi Reading mới nhất
+    latest_readings = Reading.objects.order_by('-timestamp')[:20]
+    
+    # Chuẩn bị dữ liệu cho biểu đồ (10 điểm gần nhất)
+    chart_data = []
+    if latest_readings:
+        for reading in latest_readings[:10]:
+            chart_data.append({
+                'timestamp': reading.timestamp.strftime('%H:%M:%S'),
+                'ph': float(reading.ph),
+                'tds': float(reading.tds),
+                'ntu': float(reading.ntu)
+            })
+    
+    # Đảo ngược để hiển thị theo thứ tự thời gian
+    chart_data.reverse()
+    
     context = {
         'user_role': user_role,
-        'is_admin': user_role == 'admin'
+        'is_admin': user_role == 'admin',
+        'latest_readings': latest_readings,
+        'chart_data': json.dumps(chart_data)  # Serialize thành JSON cho template
     }
     return render(request, "monitoring/dashboard.html", context)
 
@@ -284,3 +308,47 @@ def change_password(request):
     user.save()
     
     return Response({'message': 'Mật khẩu đã được thay đổi thành công'})
+
+@login_required
+@user_required
+def readings_table_view(request):
+    """View hiển thị bảng dữ liệu Reading"""
+    readings = Reading.objects.order_by('-timestamp')
+    context = {
+        'readings': readings,
+        'total_readings': readings.count()
+    }
+    return render(request, "monitoring/readings_table.html", context)
+
+@api_view(['GET'])
+@permission_classes([])  # Bỏ yêu cầu authentication
+def latest_reading(request):
+    reading = Reading.objects.order_by('-timestamp').first()
+    if reading:
+        data = {
+            "ph": reading.ph,
+            "ntu": reading.ntu,
+            "tds": reading.tds,
+            "timestamp": reading.timestamp,
+        }
+        return Response(data)
+    return Response({"error": "No data"}, status=404)
+
+@api_view(['POST'])
+@permission_classes([])  # Bỏ yêu cầu authentication cho ESP32
+def upload_reading(request):
+    try:
+        ph = float(request.POST.get('ph', 0))
+        ntu = float(request.POST.get('ntu', 0))
+        tds = float(request.POST.get('tds', 0))
+        
+        # Tạo và lưu dữ liệu mới
+        reading = Reading.objects.create(
+            ph=ph,
+            ntu=ntu,
+            tds=tds
+        )
+        
+        return Response({'message': 'Data received successfully', 'id': reading.pk})
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)

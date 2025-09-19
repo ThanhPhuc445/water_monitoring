@@ -84,10 +84,36 @@
                 <i class="bi bi-droplet-fill"></i> Water Monitor
             </a>
             
-            <div class="d-flex">
-                {% if user.is_authenticated %}
+            {% if user.is_authenticated %}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'readings_table' %}">
+                            <i class="bi bi-table"></i> Dữ liệu cảm biến
+                        </a>
+                    </li>
+                    {% if user.role == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_dashboard' %}">
+                            <i class="bi bi-gear"></i> Quản trị
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <div class="d-flex">
                     <span class="navbar-text me-3">
                         Xin chào, <strong>{{ user.username }}</strong>
+                        <span class="badge bg-secondary ms-2">{{ user.role|title }}</span>
                     </span>
                     <form action="{% url 'logout' %}" method="post">
                         {% csrf_token %}
@@ -95,11 +121,14 @@
                             <i class="bi bi-box-arrow-right"></i> Đăng xuất
                         </button>
                     </form>
-                {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-outline-primary me-2 btn-sm">Đăng nhập</a>
-                    <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Đăng ký</a>
-                {% endif %}
+                </div>
             </div>
+            {% else %}
+            <div class="d-flex">
+                <a href="{% url 'login' %}" class="btn btn-outline-primary me-2 btn-sm">Đăng nhập</a>
+                <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Đăng ký</a>
+            </div>
+            {% endif %}
         </div>
     </nav>
 
