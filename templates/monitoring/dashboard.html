@@ -12,79 +12,220 @@
         </div>
     </div>
 
-    <!-- Thống kê nhanh -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-droplet fs-1 text-primary"></i>
-                    <h5 class="card-title mt-2">Mức nước</h5>
-                    <h3 class="text-primary">85%</h3>
-                    <p class="text-muted">Bình thường</p>
+    <!-- Thống kê từ dữ liệu thực -->
+    {% if latest_readings %}
+        {% with latest_reading=latest_readings.0 %}
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-droplet fs-1 text-primary"></i>
+                        <h5 class="card-title mt-2">pH</h5>
+                        <h3 class="{% if latest_reading.ph >= 6.5 and latest_reading.ph <= 8.5 %}text-success{% else %}text-warning{% endif %}">
+                            {{ latest_reading.ph|floatformat:2 }}
+                        </h3>
+                        <p class="text-muted">
+                            {% if latest_reading.ph >= 6.5 and latest_reading.ph <= 8.5 %}Bình thường{% else %}Cần kiểm tra{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-thermometer-half fs-1 text-warning"></i>
+                        <h5 class="card-title mt-2">TDS</h5>
+                        <h3 class="{% if latest_reading.tds <= 500 %}text-success{% elif latest_reading.tds <= 1000 %}text-warning{% else %}text-danger{% endif %}">
+                            {{ latest_reading.tds|floatformat:0 }} ppm
+                        </h3>
+                        <p class="text-muted">
+                            {% if latest_reading.tds <= 500 %}Tốt{% elif latest_reading.tds <= 1000 %}Trung bình{% else %}Cao{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-shield-check fs-1 text-success"></i>
+                        <h5 class="card-title mt-2">NTU (Độ đục)</h5>
+                        <h3 class="{% if latest_reading.ntu <= 4 %}text-success{% elif latest_reading.ntu <= 10 %}text-warning{% else %}text-danger{% endif %}">
+                            {{ latest_reading.ntu|floatformat:2 }}
+                        </h3>
+                        <p class="text-muted">
+                            {% if latest_reading.ntu <= 4 %}Trong{% elif latest_reading.ntu <= 10 %}Hơi đục{% else %}Đục{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-clock fs-1 text-info"></i>
+                        <h5 class="card-title mt-2">Cập nhật cuối</h5>
+                        <h6 class="text-info">{{ latest_reading.timestamp|date:"d/m/Y" }}</h6>
+                        <p class="text-muted">{{ latest_reading.timestamp|time:"H:i:s" }}</p>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-thermometer-half fs-1 text-warning"></i>
-                    <h5 class="card-title mt-2">Nhiệt độ</h5>
-                    <h3 class="text-warning">28°C</h3>
-                    <p class="text-muted">Ổn định</p>
+        {% endwith %}
+    {% else %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Chưa có dữ liệu từ cảm biến. Hãy kiểm tra kết nối thiết bị.
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-shield-check fs-1 text-success"></i>
-                    <h5 class="card-title mt-2">Chất lượng</h5>
-                    <h3 class="text-success">92%</h3>
-                    <p class="text-muted">Tốt</p>
+    {% endif %}
+
+    <!-- Dữ liệu gần đây -->
+    {% if latest_readings %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📊 Dữ liệu gần đây</h5>
+                    <a href="{% url 'readings_table' %}" class="btn btn-sm btn-primary">Xem tất cả</a>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
                 <div class="card-body">
-                    <i class="bi bi-bell fs-1 text-danger"></i>
-                    <h5 class="card-title mt-2">Cảnh báo</h5>
-                    <h3 class="text-danger">2</h3>
-                    <p class="text-muted">Cần xử lý</p>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Thời gian</th>
+                                    <th>pH</th>
+                                    <th>TDS (ppm)</th>
+                                    <th>NTU</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reading in latest_readings|slice:":10" %}
+                                <tr>
+                                    <td>
+                                        <small>{{ reading.timestamp|date:"d/m" }}</small><br>
+                                        <strong>{{ reading.timestamp|time:"H:i:s" }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if reading.ph >= 6.5 and reading.ph <= 8.5 %}bg-success{% else %}bg-warning{% endif %}">
+                                            {{ reading.ph|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if reading.tds <= 500 %}bg-success{% elif reading.tds <= 1000 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ reading.tds|floatformat:0 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if reading.ntu <= 4 %}bg-success{% elif reading.ntu <= 10 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ reading.ntu|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+    {% endif %}
 
-    <!-- Biểu đồ và thông tin -->
-    <div class="row">
-        <div class="col-md-8">
+    <!-- Biểu đồ dữ liệu cảm biến -->
+    {% if chart_data %}
+    <div class="row mt-4">
+        <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title"><i class="bi bi-graph-up"></i> Biểu đồ mức nước</h5>
+                    <h5 class="card-title"><i class="bi bi-graph-up"></i> Biểu đồ dữ liệu cảm biến theo thời gian</h5>
                 </div>
                 <div class="card-body">
-                    <div style="height: 300px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                        <p class="text-muted">Biểu đồ sẽ hiển thị tại đây</p>
-                    </div>
+                    <canvas id="sensorChart" height="100"></canvas>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-4">
+    </div>
+    {% endif %}
+
+    <!-- Cảnh báo gần đây - đưa vào giữa -->
+    <div class="row mt-4">
+        <div class="col-12 col-md-8 mx-auto">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title"><i class="bi bi-list-check"></i> Cảnh báo gần đây</h5>
+                <div class="card-header text-center">
+                    <h5 class="card-title mb-0"><i class="bi bi-exclamation-triangle"></i> Cảnh báo gần đây</h5>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-warning">
-                        <small>10:30 - 18/09/2025</small><br>
-                        <strong>Mức nước thấp</strong> tại khu vực A
-                    </div>
-                    <div class="alert alert-danger">
-                        <small>09:15 - 18/09/2025</small><br>
-                        <strong>Nhiệt độ cao</strong> tại khu vực B
-                    </div>
+                    <!-- Hiển thị cảnh báo thực từ dữ liệu -->
+                    {% if latest_readings %}
+                        {% with latest_reading=latest_readings.0 %}
+                        <div class="row">
+                            <!-- Cảnh báo pH -->
+                            {% if latest_reading.ph < 6.5 or latest_reading.ph > 8.5 %}
+                            <div class="col-12 mb-3">
+                                <div class="alert alert-warning">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><i class="bi bi-droplet"></i> pH bất thường</strong><br>
+                                            <small>Giá trị: {{ latest_reading.ph|floatformat:2 }} (Bình thường: 6.5-8.5)</small>
+                                        </div>
+                                        <small class="text-muted">{{ latest_reading.timestamp|time:"H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Cảnh báo TDS -->
+                            {% if latest_reading.tds > 500 %}
+                            <div class="col-12 mb-3">
+                                <div class="alert {% if latest_reading.tds > 1000 %}alert-danger{% else %}alert-warning{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><i class="bi bi-thermometer-half"></i> TDS {% if latest_reading.tds > 1000 %}cao{% else %}trung bình{% endif %}</strong><br>
+                                            <small>Giá trị: {{ latest_reading.tds|floatformat:0 }} ppm (Tốt: <500 ppm)</small>
+                                        </div>
+                                        <small class="text-muted">{{ latest_reading.timestamp|time:"H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Cảnh báo NTU -->
+                            {% if latest_reading.ntu > 4 %}
+                            <div class="col-12 mb-3">
+                                <div class="alert {% if latest_reading.ntu > 10 %}alert-danger{% else %}alert-warning{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><i class="bi bi-shield-check"></i> Độ đục {% if latest_reading.ntu > 10 %}cao{% else %}hơi cao{% endif %}</strong><br>
+                                            <small>Giá trị: {{ latest_reading.ntu|floatformat:2 }} NTU (Trong: <4 NTU)</small>
+                                        </div>
+                                        <small class="text-muted">{{ latest_reading.timestamp|time:"H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Nếu không có cảnh báo -->
+                        {% if latest_reading.ph >= 6.5 and latest_reading.ph <= 8.5 and latest_reading.tds <= 500 and latest_reading.ntu <= 4 %}
+                        <div class="text-center py-4">
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle-fill fs-2 text-success"></i>
+                                <h6 class="mt-2 mb-1">Tất cả thông số bình thường</h6>
+                                <small class="text-muted">Cập nhật lúc: {{ latest_reading.timestamp|time:"H:i:s" }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-info-circle fs-2 text-muted"></i>
+                            <h6 class="mt-2 text-muted">Chưa có dữ liệu</h6>
+                            <small class="text-muted">Hệ thống chưa nhận được dữ liệu từ cảm biến</small>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -108,4 +249,113 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Chart.js script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    {% if chart_data %}
+    // Dữ liệu từ Django
+    const chartData = JSON.parse('{{ chart_data|escapejs }}');
+    
+    // Chuẩn bị dữ liệu cho Chart.js
+    const labels = chartData.map(item => item.timestamp);
+    const phData = chartData.map(item => item.ph);
+    const tdsData = chartData.map(item => item.tds);
+    const ntuData = chartData.map(item => item.ntu);
+    
+    // Tạo biểu đồ
+    const ctx = document.getElementById('sensorChart').getContext('2d');
+    const sensorChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'pH',
+                    data: phData,
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'TDS (ppm)',
+                    data: tdsData,
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'NTU',
+                    data: ntuData,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.4,
+                    yAxisID: 'y2'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Dữ liệu cảm biến theo thời gian'
+                },
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Thời gian'
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'pH'
+                    },
+                    min: 0,
+                    max: 14
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'TDS (ppm)'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                },
+                y2: {
+                    type: 'linear',
+                    display: false,
+                    position: 'right',
+                }
+            }
+        }
+    });
+    
+    // Auto refresh biểu đồ mỗi 10 giây
+    setInterval(function() {
+        location.reload();
+    }, 10000);
+    {% endif %}
+</script>
 {% endblock %}

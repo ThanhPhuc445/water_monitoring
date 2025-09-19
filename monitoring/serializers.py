@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.translation import gettext_lazy as _
+from .models import Reading
 
 User = get_user_model()
 
@@ -43,3 +44,8 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 # Đặt lại mật khẩu
 class PasswordResetSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, min_length=6)
+
+class ReadingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reading
+        fields = '__all__'
