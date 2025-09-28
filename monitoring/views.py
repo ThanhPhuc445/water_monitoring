@@ -26,28 +26,20 @@ import json
 
 User = get_user_model()
 
-# ==================== VIEWS CHO TEMPLATE ====================
-
-# Trang chủ công khai
 def home_view(request):
     """Trang chủ công khai, không yêu cầu đăng nhập"""
     if request.user.is_authenticated:
-        # Nếu đã đăng nhập, chuyển hướng đến dashboard
         return redirect('dashboard')
     return render(request, "monitoring/home.html")
 
-# Đăng ký với hỗ trợ role
-# Đăng ký với hỗ trợ role và email
 def register_view(request):
     if request.method == "POST":
-        # Xử lý form đăng ký thủ công để thêm role và email
         username = request.POST.get('username')
         email = request.POST.get('email')
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
-        role = request.POST.get('role', 'user')  # Mặc định là user nếu không chọn
+        role = request.POST.get('role', 'user') 
         
-        # Validate dữ liệu
         errors = []
         
         if not username:
@@ -117,17 +109,14 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "Đã đăng xuất thành công.")
-    return redirect("home")  # Chuyển hướng về trang chủ thay vì login
+    return redirect("home")
 
 # Dashboard với phân quyền
 @login_required
 @user_required
 def dashboard_view(request):
     user_role = request.user.role
-    # Lấy 20 bản ghi Reading mới nhất
     latest_readings = Reading.objects.order_by('-timestamp')[:20]
-    
-    # Chuẩn bị dữ liệu cho biểu đồ (10 điểm gần nhất)
     chart_data = []
     if latest_readings:
         for reading in latest_readings[:10]:
@@ -137,52 +126,38 @@ def dashboard_view(request):
                 'tds': float(reading.tds),
                 'ntu': float(reading.ntu)
             })
-    
-    # Đảo ngược để hiển thị theo thứ tự thời gian
-    chart_data.reverse()
+        chart_data.reverse()
     
     context = {
         'user_role': user_role,
         'is_admin': user_role == 'admin',
         'latest_readings': latest_readings,
-        'chart_data': json.dumps(chart_data)  # Serialize thành JSON cho template
+        'chart_data': json.dumps(chart_data)
     }
     return render(request, "monitoring/dashboard.html", context)
 
-# View chỉ dành cho admin
 @login_required
 @admin_required
 def admin_dashboard_view(request):
     users = User.objects.all()
     return render(request, "monitoring/admin_dashboard.html", {"users": users})
 
-# Quên mật khẩu - Gửi email reset
 def password_reset_request(request):
     if request.method == "POST":
         email = request.POST.get('email')
         try:
             user = User.objects.get(email=email)
-            # Tạo token reset
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            
-            # Tạo URL reset
             reset_url = f"{request.scheme}://{request.get_host()}/reset-password/{uid}/{token}/"
-            
-            # Gửi email (trong thực tế cần triển khai template email đẹp hơn)
             subject = 'Đặt lại mật khẩu - Water Monitor'
             message = f"""
             Xin chào {user.username},
-            
             Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản Water Monitor.
-            
             Vui lòng click vào liên kết sau để đặt lại mật khẩu:
             {reset_url}
-            
             Liên kết này sẽ hết hạn trong 24 giờ.
-            
             Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.
-            
             Trân trọng,
             Đội ngũ Water Monitor
             """
@@ -232,8 +207,6 @@ def password_reset_confirm(request, uidb64, token):
         messages.error(request, "Liên kết không hợp lệ")
         return redirect('login')
 
-# ==================== API VIEWS ====================
-
 # API Views với phân quyền
 class AdminOnlyAPIView(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
@@ -266,8 +239,6 @@ class UserProfileAPIView(APIView):
     def put(self, request):
         user = request.user
         data = request.data
-        
-        # Chỉ cho phép cập nhật một số trường nhất định
         if 'email' in data:
             user.email = data['email']
         
@@ -335,14 +306,13 @@ def latest_reading(request):
     return Response({"error": "No data"}, status=404)
 
 @api_view(['POST'])
-@permission_classes([])  # Bỏ yêu cầu authentication cho ESP32
+@permission_classes([])
 def upload_reading(request):
     try:
         ph = float(request.POST.get('ph', 0))
         ntu = float(request.POST.get('ntu', 0))
         tds = float(request.POST.get('tds', 0))
         
-        # Tạo và lưu dữ liệu mới
         reading = Reading.objects.create(
             ph=ph,
             ntu=ntu,

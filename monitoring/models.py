@@ -1,47 +1,7 @@
-# from django.db import models
-# from django.utils import timezone
-# from django.contrib.auth.models import AbstractUser
-
-
-# class Reading(models.Model):
-#     timestamp = models.DateTimeField(default=timezone.now)
-#     ph = models.FloatField()
-#     tds = models.FloatField()
-#     ntu = models.FloatField()
-#     battery = models.FloatField(null=True, blank=True)
-#     signal = models.FloatField(null=True, blank=True)
-#     created_at = models.DateTimeField(auto_now_add=True)
-
-# class Alert(models.Model):
-#     timestamp = models.DateTimeField(default=timezone.now)
-#     message = models.TextField()
-#     severity = models.CharField(max_length=20, choices=(
-#         ("LOW","Low"),("MEDIUM","Medium"),("HIGH","High")))
-#     type = models.CharField(max_length=20, choices=(
-#         ("RULE","Rule"),("AI","AI"),("FORECAST","Forecast")))
-#     status = models.CharField(max_length=20, choices=(
-#         ("NEW","New"),("ACK","Acknowledged"),("RESOLVED","Resolved")))
-#     created_at = models.DateTimeField(auto_now_add=True)
-    
-# class User(AbstractUser):
-#     ROLE_CHOICES = (
-#         ('admin', 'Admin'),
-#         ('user', 'User'),
-#     )
-#     email = models.EmailField(unique=True)
-#     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
-
-#     def __str__(self):
-#         return self.username
-
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 
-
-# ---------------------------------------------------
-# Người dùng
-# ---------------------------------------------------
 class User(AbstractUser):
     ROLE_CHOICES = (
         ('admin', 'Admin'),
@@ -53,10 +13,6 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
-
-# ---------------------------------------------------
-# Thiết bị
-# ---------------------------------------------------
 class Device(models.Model):
     name = models.CharField(max_length=100)
     location = models.CharField(max_length=200, blank=True)
@@ -67,10 +23,6 @@ class Device(models.Model):
     def __str__(self):
         return self.name
 
-
-# ---------------------------------------------------
-# Dữ liệu cảm biến (Reading)
-# ---------------------------------------------------
 class Reading(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     ph = models.FloatField()
@@ -84,10 +36,6 @@ class Reading(models.Model):
     def __str__(self):
         return f"Reading {self.pk} - {self.timestamp}"
 
-
-# ---------------------------------------------------
-# Forecast (dự báo chất lượng nước)
-# ---------------------------------------------------
 class Forecast(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     ph_forecast = models.FloatField()
@@ -99,10 +47,6 @@ class Forecast(models.Model):
     def __str__(self):
         return f"Forecast {self.pk} - {self.timestamp}"
 
-
-# ---------------------------------------------------
-# Dữ liệu cảm biến khác (SensorData)
-# ---------------------------------------------------
 class SensorData(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     sensor_type = models.CharField(max_length=50)  # ví dụ: nhiệt độ, độ mặn
@@ -113,10 +57,6 @@ class SensorData(models.Model):
     def __str__(self):
         return f"{self.sensor_type} - {self.value}"
 
-
-# ---------------------------------------------------
-# Cảnh báo
-# ---------------------------------------------------
 class Alert(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     message = models.TextField()
@@ -132,10 +72,6 @@ class Alert(models.Model):
     def __str__(self):
         return f"Alert {self.pk} - {self.severity}"
 
-
-# ---------------------------------------------------
-# Báo cáo chất lượng nước
-# ---------------------------------------------------
 class Report(models.Model):
     REPORT_TYPE_CHOICES = (
         ('READING', 'Reading'),

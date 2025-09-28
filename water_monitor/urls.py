@@ -13,6 +13,6 @@ urlpatterns = [
     path("password-reset-request/", monitoring_views.password_reset_request, name="password_reset_request"),
     path("reset-password/<uidb64>/<token>/", monitoring_views.password_reset_confirm, name="password_reset_confirm"),
     path("password-reset/", include("django.contrib.auth.urls")),
-    path('', include('monitoring.urls')),  # Include tất cả URLs từ monitoring
+    path('', include('monitoring.urls')),
 
 ]
