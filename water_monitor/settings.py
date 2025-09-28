@@ -70,7 +70,6 @@ DATABASES = {
     }
 }
 
-# 🔑 Custom user model
 AUTH_USER_MODEL = 'monitoring.User'
 
 # Password validation
