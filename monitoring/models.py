@@ -97,3 +97,28 @@ class Report(models.Model):
 
     def __str__(self):
         return f"{self.title} → {self.recipient.username}"
+    
+
+# models.py
+class LoginHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="login_history")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    status = models.CharField(max_length=20, choices=(
+        ("SUCCESS", "Success"),
+        ("FAILED", "Failed"),
+    ))
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.status} at {self.timestamp}"
+
+class UserActionHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    action = models.CharField(max_length=255)  # mô tả hành động
+    detail = models.TextField(blank=True, null=True)  # chi tiết
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.action} - {self.timestamp}"

@@ -20,7 +20,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'monitoring',
+<<<<<<< HEAD
+=======
+
+    # App của dự án
+    'monitoring.apps.MonitoringConfig',
+>>>>>>> b8631b1 (Update: thêm chức năng lịch sử đăng nhập và hành động người dùng)
 ]
 
 MIDDLEWARE = [
@@ -55,9 +60,9 @@ WSGI_APPLICATION = 'water_monitor.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',  
-        'NAME': 'quality_water',             
+        'NAME': 'water_quality_db',             
         'USER': 'root',               
-        'PASSWORD': 'root',          
+        'PASSWORD': 'tuansan12345',          
         'HOST': 'localhost',               
         'PORT': '3306',                     
         'OPTIONS': {

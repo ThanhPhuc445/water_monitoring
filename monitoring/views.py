@@ -21,6 +21,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Reading
 from .serializers import ReadingSerializer
+from monitoring.models import UserActionHistory
+from django.contrib.admin.views.decorators import staff_member_required
 
 import json
 
@@ -322,3 +324,21 @@ def upload_reading(request):
         return Response({'message': 'Data received successfully', 'id': reading.pk})
     except Exception as e:
         return Response({'error': str(e)}, status=400)
+    
+def log_action(request, action, detail=""):
+    ip = request.META.get('REMOTE_ADDR')
+    UserActionHistory.objects.create(
+        user=request.user if request.user.is_authenticated else None,
+        action=action,
+        detail=detail,
+        ip_address=ip
+    )
+
+@staff_member_required
+def access_report(request):
+    login_logs = LoginHistory.objects.all().order_by('-timestamp')[:50]
+    actions = UserActionHistory.objects.all().order_by('-timestamp')[:50]
+    return render(request, 'monitoring/access_report.html', {
+        'login_logs': login_logs,
+        'actions': actions
+    })

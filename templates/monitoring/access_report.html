@@ -1,0 +1,38 @@
+<h2>Báo cáo truy cập</h2>
+<h3>Đăng nhập/Đăng xuất</h3>
+<table>
+  <tr>
+    <th>User</th>
+    <th>Trạng thái</th>
+    <th>IP</th>
+    <th>Thời gian</th>
+  </tr>
+  {% for log in login_logs %}
+  <tr>
+    <td>{{ log.user }}</td>
+    <td>{{ log.status }}</td>
+    <td>{{ log.ip_address }}</td>
+    <td>{{ log.timestamp }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>Hành động người dùng</h3>
+<table>
+  <tr>
+    <th>User</th>
+    <th>Hành động</th>
+    <th>Chi tiết</th>
+    <th>IP</th>
+    <th>Thời gian</th>
+  </tr>
+  {% for act in actions %}
+  <tr>
+    <td>{{ act.user }}</td>
+    <td>{{ act.action }}</td>
+    <td>{{ act.detail }}</td>
+    <td>{{ act.ip_address }}</td>
+    <td>{{ act.timestamp }}</td>
+  </tr>
+  {% endfor %}
+</table>
