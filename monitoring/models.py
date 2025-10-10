@@ -79,29 +79,45 @@ class Report(models.Model):
         ('MIXED', 'Mixed'),
     )
 
+    STATUS_CHOICES = (
+        ('DRAFT', 'Draft'),
+        ('SENT', 'Sent'),
+    )
+
     title = models.CharField(max_length=200)
     report_type = models.CharField(max_length=20, choices=REPORT_TYPE_CHOICES)
 
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='reports_created')  # admin
-    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reports_received')  # user nhận
-
-    device = models.ForeignKey(Device, on_delete=models.SET_NULL, null=True, blank=True, related_name='reports')
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name='reports_created'
+    )
+    recipient = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name='reports_received'
+    )
+    device = models.ForeignKey(
+        Device, on_delete=models.SET_NULL, null=True, blank=True, related_name='reports'
+    )
 
     readings = models.ManyToManyField(Reading, blank=True, related_name='reports')
     forecasts = models.ManyToManyField(Forecast, blank=True, related_name='reports')
 
     content = models.TextField()
-    status = models.CharField(max_length=20, choices=(('DRAFT', 'Draft'), ('SENT', 'Sent')), default='DRAFT')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.title} → {self.recipient.username}"
+        recipient = self.recipient.username if self.recipient else "Unknown"
+        return f"{self.title} → {recipient}"
+
+    class Meta:
+        ordering = ['-created_at']
+
     
 
 # models.py
 class LoginHistory(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="login_history")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="login_history", null=True, blank=True)
+    username = models.CharField(max_length=150, null=True, blank=True)  # lưu tên người dùng đăng nhập failed
     timestamp = models.DateTimeField(auto_now_add=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=300, blank=True)
@@ -111,7 +127,10 @@ class LoginHistory(models.Model):
     ))
     
     def __str__(self):
+     if self.user:
         return f"{self.user.username} - {self.status} at {self.timestamp}"
+     return f"{self.username or 'Unknown'} - {self.status} at {self.timestamp}"
+
 
 class UserActionHistory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -122,3 +141,4 @@ class UserActionHistory(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.action} - {self.timestamp}"
+

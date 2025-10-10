@@ -1,38 +1,47 @@
-<h2>Báo cáo truy cập</h2>
-<h3>Đăng nhập/Đăng xuất</h3>
-<table>
-  <tr>
-    <th>User</th>
-    <th>Trạng thái</th>
-    <th>IP</th>
-    <th>Thời gian</th>
-  </tr>
-  {% for log in login_logs %}
-  <tr>
-    <td>{{ log.user }}</td>
-    <td>{{ log.status }}</td>
-    <td>{{ log.ip_address }}</td>
-    <td>{{ log.timestamp }}</td>
-  </tr>
-  {% endfor %}
+<h2>Lịch sử đăng nhập</h2>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Username</th>
+      <th>IP</th>
+      <th>User Agent</th>
+      <th>Status</th>
+      <th>Thời gian</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for log in login_logs %}
+    <tr>
+      <td>{{ log.username }}</td>
+      <td>{{ log.ip_address }}</td>
+      <td>{{ log.user_agent }}</td>
+      <td>{{ log.status }}</td>
+      <td>{{ log.timestamp }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
 </table>
 
-<h3>Hành động người dùng</h3>
-<table>
-  <tr>
-    <th>User</th>
-    <th>Hành động</th>
-    <th>Chi tiết</th>
-    <th>IP</th>
-    <th>Thời gian</th>
-  </tr>
-  {% for act in actions %}
-  <tr>
-    <td>{{ act.user }}</td>
-    <td>{{ act.action }}</td>
-    <td>{{ act.detail }}</td>
-    <td>{{ act.ip_address }}</td>
-    <td>{{ act.timestamp }}</td>
-  </tr>
-  {% endfor %}
+<h2>Lịch sử hành động</h2>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Hành động</th>
+      <th>Chi tiết</th>
+      <th>IP</th>
+      <th>Thời gian</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for action in actions %}
+    <tr>
+      <td>{{ action.user }}</td>
+      <td>{{ action.action }}</td>
+      <td>{{ action.detail }}</td>
+      <td>{{ action.ip_address }}</td>
+      <td>{{ action.timestamp }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
 </table>

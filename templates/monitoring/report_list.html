@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Danh sách báo cáo{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg border-0">
+        <!-- Header -->
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Danh sách báo cáo</h4>
+            {% if user.role == "admin" %}
+                <a href="{% url 'report_create' %}" class="btn btn-light btn-sm">
+                    ➕ Tạo báo cáo
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Search bar -->
+        <div class="card-body">
+            <form method="get" class="mb-3">
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control" placeholder="🔍 Tìm kiếm báo cáo...">
+                    <button class="btn btn-outline-primary" type="submit">Tìm</button>
+                </div>
+            </form>
+
+            <!-- Table -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tiêu đề</th>
+                            <th>Người nhận</th>
+                            <th>Người tạo</th>
+                            <th>Loại</th>
+                            <th>Ngày tạo</th>
+                            <th>Trạng thái</th>
+                            <th class="text-center">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td class="fw-semibold">{{ report.title }}</td>
+                            <td>{{ report.recipient.username }}</td>
+                            <td>{{ report.created_by.username }}</td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ report.get_report_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if report.status == "draft" %}
+                                    <span class="badge bg-warning text-dark">Bản nháp</span>
+                                {% elif report.status == "published" %}
+                                    <span class="badge bg-success">Đã xuất bản</span>
+                                {% else %}
+                                    <span class="badge bg-info">Khác</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                            type="button" 
+                                            data-bs-toggle="dropdown" 
+                                            aria-expanded="false">
+                                        ⚙️
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'report_detail' report.id %}">
+                                                👁️ Xem
+                                            </a>
+                                        </li>
+                                        {% if user.role == "admin" %}
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'report_edit' report.id %}">
+                                                ✏️ Sửa
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <form method="post" 
+                                                  action="{% url 'report_delete' report.id %}" 
+                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa báo cáo này?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="dropdown-item text-danger">
+                                                    🗑️ Xóa
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                🚫 Chưa có báo cáo nào.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

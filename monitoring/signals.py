@@ -20,8 +20,9 @@ def log_user_login(sender, request, user, **kwargs):
 
 @receiver(user_login_failed)
 def log_user_login_failed(sender, credentials, request, **kwargs):
+    username = credentials.get("username")
     LoginHistory.objects.create(
-        user=None,
+        username=username,
         ip_address=get_client_ip(request) if request else None,
         user_agent=request.META.get("HTTP_USER_AGENT", "") if request else "",
         status="FAILED"
