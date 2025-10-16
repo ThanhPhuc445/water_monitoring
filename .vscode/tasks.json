@@ -1,0 +1,28 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Train PH+NTU model",
+			"type": "shell",
+			"command": "E:\\PBL4\\water_monitoring\\venv\\Scripts\\python.exe",
+			"args": [
+				"sensor_analysis/train_ph_ntu_model.py"
+			],
+			"problemMatcher": [
+				"$eslint-stylish"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Run synthetic generator",
+			"type": "shell",
+			"command": "E:/PBL4/water_monitoring/venv/Scripts/python.exe",
+			"args": [
+				"E:/PBL4/water_monitoring/sensor_analysis/generate_test_readings.py"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

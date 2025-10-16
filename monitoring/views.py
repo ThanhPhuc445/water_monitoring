@@ -10,6 +10,7 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.views import View
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,10 +20,15 @@ from .decorators import admin_required, user_required
 from .mixins import RoleBasedPermission, IsAdminUser, IsUser
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Reading
+from .models import Reading, Device, Alert
 from .serializers import ReadingSerializer
+from .services.ai_service import predict_water_quality, get_ai_status, predict_water_quality_strict_who
+from .services.data_logger import get_logger
 
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -291,6 +297,24 @@ def readings_table_view(request):
     }
     return render(request, "monitoring/readings_table.html", context)
 
+@login_required
+def reading_detail_view(request, reading_id):
+    """View hiển thị chi tiết một reading với đầy đủ thông tin AI"""
+    reading = get_object_or_404(Reading, pk=reading_id)
+    
+    # Lấy các readings gần đây từ cùng thiết bị (nếu có)
+    similar_readings = None
+    if reading.device:
+        similar_readings = Reading.objects.filter(
+            device=reading.device
+        ).order_by('-timestamp')[:10]
+    
+    context = {
+        'reading': reading,
+        'similar_readings': similar_readings
+    }
+    return render(request, "monitoring/reading_detail.html", context)
+
 @api_view(['GET'])
 @permission_classes([])  # Bỏ yêu cầu authentication
 def latest_reading(request):
@@ -308,17 +332,273 @@ def latest_reading(request):
 @api_view(['POST'])
 @permission_classes([])
 def upload_reading(request):
+    """
+    API endpoint để Arduino gửi dữ liệu sensor và nhận kết quả AI
+    """
+    try:
+        # Lấy dữ liệu từ request
+        ph = float(request.POST.get('ph', 0))
+        ntu = float(request.POST.get('ntu', 0))  # turbidity
+        tds = float(request.POST.get('tds', 0))
+        battery = float(request.POST.get('battery', 0)) if request.POST.get('battery') else None
+        signal = float(request.POST.get('signal', 0)) if request.POST.get('signal') else None
+        device_id = request.POST.get('device_id')  # Optional device identifier
+        
+        # Validate input data
+        if ph < 0 or ph > 14:
+            return Response({'error': 'Invalid pH value (0-14)'}, status=400)
+        if ntu < 0:
+            return Response({'error': 'Invalid turbidity value (>= 0)'}, status=400)
+        if tds < 0:
+            return Response({'error': 'Invalid TDS value (>= 0)'}, status=400)
+        
+        # Tìm device nếu có
+        device = None
+        if device_id:
+            try:
+                device = Device.objects.get(id=device_id)
+            except Device.DoesNotExist:
+                logger.warning(f"Device with ID {device_id} not found")
+        
+        # Dự đoán chất lượng nước bằng AI
+        logger.info(f"Processing sensor data: pH={ph}, NTU={ntu}, TDS={tds}")
+        ai_result = predict_water_quality(ph, ntu, tds)
+        
+        # Tạo Reading với AI prediction
+        reading = Reading.objects.create(
+            ph=ph,
+            ntu=ntu,
+            tds=tds,
+            battery=battery,
+            signal=signal,
+            device=device,
+            # AI fields
+            ai_prediction=ai_result['prediction'],
+            ai_safe_probability=ai_result['safe_probability'],
+            ai_quality_level=ai_result['quality_level'],
+            ai_risk_level=ai_result['risk_level'],
+            ai_recommendations=ai_result['recommendations'],
+            ai_model_version=ai_result['model_version']
+        )
+        
+        # Tạo Alert nếu AI phát hiện vấn đề
+        if not ai_result['is_safe'] or ai_result['risk_level'] == 'HIGH':
+            alert_message = f"Water quality alert: {ai_result['quality_level']} - "
+            alert_message += f"Safety: {ai_result['safe_probability']:.1f}%"
+            
+            Alert.objects.create(
+                message=alert_message,
+                severity="HIGH" if ai_result['risk_level'] == 'HIGH' else "MEDIUM",
+                type="AI",
+                status="NEW",
+                device=device
+            )
+            logger.warning(f"Created alert for unsafe water: {alert_message}")
+        
+        # Response cho Arduino
+        response_data = {
+            'status': 'success',
+            'message': 'Data received and analyzed successfully',
+            'reading_id': reading.pk,
+            'ai_analysis': {
+                'is_safe': ai_result['is_safe'],
+                'quality_level': ai_result['quality_level'],
+                'safe_probability': ai_result['safe_probability'],
+                'risk_level': ai_result['risk_level'],
+                'recommendations': ai_result['recommendations'][:3]  # Chỉ gửi 3 recommendations đầu
+            },
+            'sensor_data': {
+                'ph': ph,
+                'turbidity_ntu': ntu,
+                'tds_ppm': tds,
+                'ec_ms_cm': ai_result['input_data']['ec_ms_cm']
+            },
+            'timestamp': reading.timestamp.isoformat()
+        }
+        
+        logger.info(f"Successfully processed reading {reading.pk} with AI analysis")
+        return Response(response_data)
+        
+    except ValueError as e:
+        error_msg = f"Invalid data format: {str(e)}"
+        logger.error(error_msg)
+        return Response({'error': error_msg}, status=400)
+    except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        logger.error(error_msg)
+        return Response({'error': error_msg}, status=500)
+
+@api_view(['GET'])
+@permission_classes([])
+def ai_status(request):
+    """
+    API endpoint để kiểm tra trạng thái AI service
+    """
+    try:
+        status_info = get_ai_status()
+        return Response({
+            'ai_service_status': 'online' if status_info['is_loaded'] else 'offline',
+            'model_details': status_info,
+            'last_check': timezone.now().isoformat()
+        })
+    except Exception as e:
+        return Response({
+            'ai_service_status': 'error',
+            'error': str(e),
+            'last_check': timezone.now().isoformat()
+        }, status=500)
+
+@api_view(['POST'])
+@permission_classes([])
+def analyze_water(request):
+    """
+    API endpoint để phân tích chất lượng nước mà không lưu vào database
+    """
     try:
         ph = float(request.POST.get('ph', 0))
         ntu = float(request.POST.get('ntu', 0))
         tds = float(request.POST.get('tds', 0))
         
+        # Validate
+        if ph < 0 or ph > 14:
+            return Response({'error': 'Invalid pH value (0-14)'}, status=400)
+        
+        # Phân tích bằng AI
+        ai_result = predict_water_quality(ph, ntu, tds)
+        
+        return Response({
+            'analysis_result': ai_result,
+            'input_parameters': {
+                'ph': ph,
+                'turbidity_ntu': ntu,
+                'tds_ppm': tds
+            }
+        })
+        
+    except ValueError as e:
+        return Response({'error': f'Invalid data: {str(e)}'}, status=400)
+    except Exception as e:
+        return Response({'error': f'Analysis failed: {str(e)}'}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([])
+def upload_reading_strict(request):
+    """
+    API endpoint cho ESP32 gửi dữ liệu và sử dụng STRICT WHO labeler thay vì ML AI.
+    Tương thích 100% với upload_reading, chỉ khác thuật toán gắn nhãn.
+    
+    Usage từ ESP32:
+        POST /api/upload_reading_strict/
+        Content-Type: application/x-www-form-urlencoded
+        Body: ph=7.2&tds=450&ntu=0.8&battery=85&signal=75&device_id=1
+    """
+    try:
+        # Lấy dữ liệu từ request (hỗ trợ cả POST form và JSON)
+        if request.content_type == 'application/json':
+            data = request.data
+        else:
+            data = request.POST
+        
+        ph = float(data.get('ph', 0))
+        ntu = float(data.get('ntu', 0))  # turbidity
+        tds = float(data.get('tds', 0))
+        battery = float(data.get('battery', 0)) if data.get('battery') else None
+        signal = float(data.get('signal', 0)) if data.get('signal') else None
+        device_id = data.get('device_id')  # Optional device identifier
+        
+        # Validate input data
+        if ph < 0 or ph > 14:
+            return Response({'error': 'Invalid pH value (0-14)'}, status=400)
+        if ntu < 0:
+            return Response({'error': 'Invalid turbidity value (>= 0)'}, status=400)
+        if tds < 0:
+            return Response({'error': 'Invalid TDS value (>= 0)'}, status=400)
+        
+        # Tìm device nếu có
+        device = None
+        if device_id:
+            try:
+                device = Device.objects.get(id=device_id)
+            except Device.DoesNotExist:
+                logger.warning(f"Device with ID {device_id} not found")
+        
+        # Gắn nhãn bằng STRICT WHO RULES
+        logger.info(f"Processing sensor data with STRICT WHO: pH={ph}, NTU={ntu}, TDS={tds}")
+        ai_result = predict_water_quality_strict_who(ph, ntu, tds)
+        
+        # Tạo Reading với strict labeling
         reading = Reading.objects.create(
             ph=ph,
             ntu=ntu,
-            tds=tds
+            tds=tds,
+            battery=battery,
+            signal=signal,
+            device=device,
+            # AI fields (populated by strict labeler)
+            ai_prediction=ai_result['prediction'],
+            ai_safe_probability=ai_result['safe_probability'],
+            ai_quality_level=ai_result['quality_level'],
+            ai_risk_level=ai_result['risk_level'],
+            ai_recommendations=ai_result['recommendations'],
+            ai_model_version=ai_result['model_version']
         )
         
-        return Response({'message': 'Data received successfully', 'id': reading.pk})
+        # Log measurement to CSV for dataset collection
+        csv_logger = get_logger()
+        csv_logger.log_measurement(
+            ph=ph,
+            tds=tds,
+            ntu=ntu,
+            is_clean=ai_result['is_safe']
+        )
+        logger.info(f"Logged measurement to CSV: ph={ph}, tds={tds}, ntu={ntu}, label={'1' if ai_result['is_safe'] else '0'}")
+        
+        # Tạo Alert nếu strict labeler phát hiện vấn đề
+        if not ai_result['is_safe'] or ai_result['risk_level'] == 'HIGH':
+            alert_message = f"Water quality alert (WHO strict): {ai_result['quality_level']} - "
+            alert_message += f"Safety: {ai_result['safe_probability']:.1f}%"
+            
+            Alert.objects.create(
+                message=alert_message,
+                severity="HIGH" if ai_result['risk_level'] == 'HIGH' else "MEDIUM",
+                type="RULE",  # Đánh dấu là rule-based thay vì AI
+                status="NEW",
+                device=device
+            )
+            logger.warning(f"Created alert for unsafe water (strict WHO): {alert_message}")
+        
+        # Response cho ESP32
+        response_data = {
+            'status': 'success',
+            'message': 'Data received and labeled using strict WHO rules',
+            'reading_id': reading.pk,
+            'analysis': {
+                'method': 'STRICT_WHO_RULES',
+                'is_safe': ai_result['is_safe'],
+                'label': ai_result['strict_who_details']['label'],  # clean/dirty
+                'quality_level': ai_result['quality_level'],
+                'safe_probability': ai_result['safe_probability'],
+                'risk_level': ai_result['risk_level'],
+                'confidence': ai_result['strict_who_details']['confidence'],
+                'recommendations': ai_result['recommendations'][:3]  # Top 3
+            },
+            'sensor_data': {
+                'ph': ph,
+                'turbidity_ntu': ntu,
+                'tds_ppm': tds,
+            },
+            'timestamp': reading.timestamp.isoformat()
+        }
+        
+        logger.info(f"Successfully processed reading {reading.pk} with strict WHO labeling")
+        return Response(response_data)
+        
+    except ValueError as e:
+        error_msg = f"Invalid data format: {str(e)}"
+        logger.error(error_msg)
+        return Response({'error': error_msg}, status=400)
     except Exception as e:
-        return Response({'error': str(e)}, status=400)
+        error_msg = f"Unexpected error: {str(e)}"
+        logger.error(error_msg)
+        return Response({'error': error_msg}, status=500)

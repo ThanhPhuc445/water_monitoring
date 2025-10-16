@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi tiết đo lường - {{ reading.pk }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-info-circle"></i> Chi tiết đo lường #{{ reading.pk }}</h1>
+                <a href="{% url 'readings_table' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay lại
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Dữ liệu cảm biến -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-sensors"></i> Dữ liệu cảm biến</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="text-center p-3 border rounded">
+                                <i class="bi bi-droplet fs-1 text-primary"></i>
+                                <h4 class="mt-2 {% if reading.ph >= 6.5 and reading.ph <= 8.5 %}text-success{% else %}text-warning{% endif %}">
+                                    {{ reading.ph|floatformat:2 }}
+                                </h4>
+                                <p class="text-muted mb-0">pH</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 border rounded">
+                                <i class="bi bi-thermometer-half fs-1 text-warning"></i>
+                                <h4 class="mt-2 {% if reading.tds <= 500 %}text-success{% elif reading.tds <= 1000 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ reading.tds|floatformat:0 }}
+                                </h4>
+                                <p class="text-muted mb-0">TDS (ppm)</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 border rounded">
+                                <i class="bi bi-shield-check fs-1 text-info"></i>
+                                <h4 class="mt-2 {% if reading.ntu <= 4 %}text-success{% elif reading.ntu <= 10 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ reading.ntu|floatformat:2 }}
+                                </h4>
+                                <p class="text-muted mb-0">NTU (Độ đục)</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 border rounded">
+                                <i class="bi bi-lightning fs-1 text-success"></i>
+                                <h4 class="mt-2">{{ reading.calculated_ec|floatformat:3 }}</h4>
+                                <p class="text-muted mb-0">EC (mS/cm)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Thông tin thiết bị:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Thiết bị:</strong> {{ reading.device.name|default:"Không xác định" }}</li>
+                            <li><strong>Pin:</strong> 
+                                {% if reading.battery %}
+                                    <span class="badge {% if reading.battery >= 50 %}bg-success{% elif reading.battery >= 20 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ reading.battery|floatformat:1 }}%
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </li>
+                            <li><strong>Tín hiệu:</strong> 
+                                {% if reading.signal %}
+                                    <span class="badge {% if reading.signal >= -70 %}bg-success{% elif reading.signal >= -85 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ reading.signal|floatformat:0 }} dBm
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </li>
+                            <li><strong>Thời gian:</strong> {{ reading.timestamp|date:"d/m/Y H:i:s" }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kết quả AI -->
+        <div class="col-md-6">
+            {% if reading.ai_prediction is not None %}
+            <div class="card h-100 border-{% if reading.ai_prediction == 1 %}success{% else %}danger{% endif %}">
+                <div class="card-header bg-{% if reading.ai_prediction == 1 %}success{% else %}danger{% endif %} text-white">
+                    <h5 class="mb-0"><i class="bi bi-robot"></i> Phân tích AI</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        {% if reading.ai_prediction == 1 %}
+                            <i class="bi bi-shield-check display-1 text-success"></i>
+                            <h2 class="text-success mt-2">AN TOÀN</h2>
+                        {% else %}
+                            <i class="bi bi-shield-x display-1 text-danger"></i>
+                            <h2 class="text-danger mt-2">KHÔNG AN TOÀN</h2>
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6>Chất lượng nước</h6>
+                                <h4 class="text-info">{{ reading.ai_quality_level|default:"N/A" }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6>Độ tin cậy</h6>
+                                <div class="progress mb-2" style="height: 20px;">
+                                    <div class="progress-bar bg-{% if reading.ai_safe_probability >= 70 %}success{% elif reading.ai_safe_probability >= 50 %}warning{% else %}danger{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ reading.ai_safe_probability }}%">
+                                        {{ reading.ai_safe_probability }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h6>Mức độ rủi ro</h6>
+                                <span class="badge fs-6 {% if reading.ai_risk_level == 'LOW' %}bg-success{% elif reading.ai_risk_level == 'MEDIUM' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {% if reading.ai_risk_level == 'LOW' %}THẤP{% elif reading.ai_risk_level == 'MEDIUM' %}TRUNG BÌNH{% else %}CAO{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if reading.ai_recommendations %}
+                    <div class="mb-3">
+                        <h6><i class="bi bi-lightbulb"></i> Khuyến nghị từ AI:</h6>
+                        <div class="alert alert-info">
+                            {% for recommendation in reading.ai_recommendations %}
+                                <div class="d-flex align-items-start mb-2">
+                                    <i class="bi bi-arrow-right-circle me-2 mt-1"></i>
+                                    <span>{{ recommendation }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-cpu"></i> Model: {{ reading.ai_model_version|default:"V1.0" }}<br>
+                            <i class="bi bi-clock"></i> Phân tích lúc: {{ reading.timestamp|date:"d/m/Y H:i:s" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card h-100 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Chưa có phân tích AI</h5>
+                </div>
+                <div class="card-body text-center">
+                    <i class="bi bi-robot display-1 text-muted"></i>
+                    <h4 class="text-muted mt-3">Chưa phân tích</h4>
+                    <p class="text-muted">Dữ liệu này chưa được AI phân tích hoặc AI service không khả dụng khi đo.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Lịch sử readings gần đây từ cùng thiết bị -->
+    {% if similar_readings %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Lịch sử gần đây từ thiết bị này</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Thời gian</th>
+                                    <th>pH</th>
+                                    <th>TDS</th>
+                                    <th>NTU</th>
+                                    <th>AI</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in similar_readings %}
+                                <tr {% if r.pk == reading.pk %}class="table-primary"{% endif %}>
+                                    <td>
+                                        <small>{{ r.timestamp|date:"d/m H:i" }}</small>
+                                        {% if r.pk == reading.pk %}<strong> (hiện tại)</strong>{% endif %}
+                                    </td>
+                                    <td>{{ r.ph|floatformat:2 }}</td>
+                                    <td>{{ r.tds|floatformat:0 }}</td>
+                                    <td>{{ r.ntu|floatformat:2 }}</td>
+                                    <td>
+                                        {% if r.ai_prediction is not None %}
+                                            <span class="badge {% if r.ai_prediction == 1 %}bg-success{% else %}bg-danger{% endif %}">
+                                                {{ r.ai_safe_probability }}%
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

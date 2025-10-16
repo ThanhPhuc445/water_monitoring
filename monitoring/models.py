@@ -31,10 +31,50 @@ class Reading(models.Model):
     battery = models.FloatField(null=True, blank=True)
     signal = models.FloatField(null=True, blank=True)
     device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='readings', null=True, blank=True)
+    
+    # AI Prediction fields
+    ai_prediction = models.IntegerField(null=True, blank=True, help_text="AI prediction: 0=unsafe, 1=safe")
+    ai_safe_probability = models.FloatField(null=True, blank=True, help_text="Probability of being safe (0-100)")
+    ai_quality_level = models.CharField(max_length=20, null=True, blank=True, 
+                                       choices=[
+                                           ('EXCELLENT', 'Excellent'),
+                                           ('GOOD', 'Good'),
+                                           ('FAIR', 'Fair'),
+                                           ('POOR', 'Poor'),
+                                           ('VERY_POOR', 'Very Poor')
+                                       ])
+    ai_risk_level = models.CharField(max_length=10, null=True, blank=True,
+                                    choices=[
+                                        ('LOW', 'Low'),
+                                        ('MEDIUM', 'Medium'),
+                                        ('HIGH', 'High')
+                                    ])
+    ai_recommendations = models.JSONField(null=True, blank=True, help_text="AI recommendations as JSON array")
+    ai_model_version = models.CharField(max_length=50, null=True, blank=True, help_text="AI model version used")
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Reading {self.pk} - {self.timestamp}"
+    
+    @property
+    def is_ai_safe(self):
+        """Check if AI considers this reading safe"""
+        return self.ai_prediction == 1 if self.ai_prediction is not None else None
+    
+    @property
+    def ai_status_display(self):
+        """Human readable AI status"""
+        if self.ai_prediction is None:
+            return "Not analyzed"
+        return "SAFE" if self.ai_prediction == 1 else "UNSAFE"
+    
+    @property
+    def calculated_ec(self):
+        """Calculate EC from TDS using conversion factor k=15"""
+        if self.tds:
+            return self.tds / (15 * 1000)  # Convert TDS to EC in mS/cm
+        return None
 
 class Forecast(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)

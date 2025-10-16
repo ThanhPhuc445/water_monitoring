@@ -22,6 +22,7 @@
                                         <th>pH</th>
                                         <th>TDS (ppm)</th>
                                         <th>NTU</th>
+                                        <th>🤖 AI Phân tích</th>
                                         <th>Pin (%)</th>
                                         <th>Tín hiệu</th>
                                         <th>Thiết bị</th>
@@ -30,7 +31,11 @@
                                 <tbody>
                                     {% for reading in readings %}
                                     <tr>
-                                        <td>{{ reading.pk }}</td>
+                                        <td>
+                                            <a href="{% url 'reading_detail' reading.pk %}" class="text-decoration-none">
+                                                {{ reading.pk }}
+                                            </a>
+                                        </td>
                                         <td>
                                             <small>{{ reading.timestamp|date:"d/m/Y" }}</small><br>
                                             <strong>{{ reading.timestamp|time:"H:i:s" }}</strong>
@@ -49,6 +54,28 @@
                                             <span class="badge {% if reading.ntu <= 4 %}bg-success{% elif reading.ntu <= 10 %}bg-warning{% else %}bg-danger{% endif %}">
                                                 {{ reading.ntu|floatformat:2 }}
                                             </span>
+                                        </td>
+                                        <td>
+                                            {% if reading.ai_prediction is not None %}
+                                                <div class="mb-1">
+                                                    <span class="badge {% if reading.ai_prediction == 1 %}bg-success{% else %}bg-danger{% endif %}">
+                                                        {% if reading.ai_prediction == 1 %}✅ AN TOÀN{% else %}❌ RỦI RO{% endif %}
+                                                    </span>
+                                                </div>
+                                                <div class="mb-1">
+                                                    <small class="badge bg-info">{{ reading.ai_quality_level|default:"N/A" }}</small>
+                                                </div>
+                                                <div class="mb-1">
+                                                    <small class="text-muted">{{ reading.ai_safe_probability }}% tin cậy</small>
+                                                </div>
+                                                <div>
+                                                    <small class="badge bg-{% if reading.ai_risk_level == 'LOW' %}success{% elif reading.ai_risk_level == 'MEDIUM' %}warning{% else %}danger{% endif %}">
+                                                        {% if reading.ai_risk_level == 'LOW' %}THẤP{% elif reading.ai_risk_level == 'MEDIUM' %}TB{% else %}CAO{% endif %}
+                                                    </small>
+                                                </div>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Chưa phân tích</span>
+                                            {% endif %}
                                         </td>
                                         <td>
                                             {% if reading.battery %}
