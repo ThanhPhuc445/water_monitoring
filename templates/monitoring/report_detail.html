@@ -18,9 +18,9 @@
                 <span class="badge bg-secondary">{{ report.get_report_type_display }}</span>
             </p>
 
-            <p class="mb-1"><span class="fw-bold">Người tạo:</span> {{ report.created_by }}</p>
-            <p class="mb-1"><span class="fw-bold">Người nhận:</span> {{ report.recipient }}</p>
-            <p class="mb-1"><span class="fw-bold">Thiết bị:</span> {{ report.device }}</p>
+            <p class="mb-1"><span class="fw-bold">Người tạo:</span> {{ report.created_by_name }}</p>
+            <p class="mb-1"><span class="fw-bold">Thiết bị:</span> {{ report.device.name|default:"Không có" }}</p>
+            <p class="mb-1"><span class="fw-bold">Địa điểm:</span> {{ report.location }}</p>
 
             <hr>
 
@@ -31,8 +31,8 @@
             </div>
 
             <!-- Readings -->
-            {% if report.readings.all %}
-                <h5 class="mt-4 fw-bold">📊 Readings</h5>
+            {% if report.readings.exists %}
+                <h5 class="mt-4 fw-bold">📊 Dữ liệu đo (Readings)</h5>
                 <ul class="list-group">
                     {% for r in report.readings.all %}
                         <li class="list-group-item">{{ r }}</li>
@@ -41,8 +41,8 @@
             {% endif %}
 
             <!-- Forecasts -->
-            {% if report.forecasts.all %}
-                <h5 class="mt-4 fw-bold">🌦 Forecasts</h5>
+            {% if report.forecasts.exists %}
+                <h5 class="mt-4 fw-bold">🌦 Dự báo (Forecasts)</h5>
                 <ul class="list-group">
                     {% for f in report.forecasts.all %}
                         <li class="list-group-item">{{ f }}</li>
@@ -55,10 +55,10 @@
             <!-- Trạng thái -->
             <p>
                 <span class="fw-bold">Trạng thái:</span>
-                {% if report.status == "draft" %}
+                {% if report.status == "DRAFT" %}
                     <span class="badge bg-warning text-dark">Bản nháp</span>
-                {% elif report.status == "published" %}
-                    <span class="badge bg-success">Đã xuất bản</span>
+                {% elif report.status == "SENT" %}
+                    <span class="badge bg-success">Đã gửi</span>
                 {% else %}
                     <span class="badge bg-info">Khác</span>
                 {% endif %}

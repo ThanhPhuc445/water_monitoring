@@ -21,8 +21,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'monitoring.apps.MonitoringConfig',
-
+    'widget_tweaks',
 ]
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

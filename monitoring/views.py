@@ -430,21 +430,17 @@ def report_detail_view(request, pk):
 
 
 @login_required
-@user_passes_test(is_admin)
 def report_create_view(request):
     if request.method == "POST":
         form = ReportForm(request.POST)
         if form.is_valid():
             report = form.save(commit=False)
-            report.created_by = request.user
-            if report.status == "SENT":
-                report.sent_at = timezone.now()
+            report.created_by = request.user  # ✅ tự gán người tạo
             report.save()
-            form.save_m2m()
-            log_action(request, "Tạo báo cáo", f"Report ID: {report.id}")
             return redirect("report_list")
     else:
         form = ReportForm()
+
     return render(request, "monitoring/report_form.html", {"form": form})
 
 @login_required
@@ -459,7 +455,7 @@ def report_edit(request, pk):
             return redirect("report_list")
     else:
         form = ReportForm(instance=report)
-    return render(request, "reports/report_form.html", {"form": form})
+    return render(request, "monitoring/report_form.html", {"form": form})
 
 @login_required
 @user_passes_test(is_admin)
@@ -469,4 +465,4 @@ def report_delete(request, pk):
         report.delete()
         messages.success(request, "Báo cáo đã được xóa.")
         return redirect("report_list")
-    return render(request, "reports/report_confirm_delete.html", {"report": report})
+    return render(request, "monitoring/report_confirm_delete.html", {"report": report})

@@ -74,9 +74,10 @@ class Alert(models.Model):
 
 class Report(models.Model):
     REPORT_TYPE_CHOICES = (
-        ('READING', 'Reading'),
-        ('FORECAST', 'Forecast'),
-        ('MIXED', 'Mixed'),
+        ('daily', 'Báo cáo hàng ngày'),
+        ('weekly', 'Báo cáo hàng tuần'),
+        ('monthly', 'Báo cáo hàng tháng'),
+        ('incident','Báo cáo sự cố')
     )
 
     STATUS_CHOICES = (
@@ -87,9 +88,10 @@ class Report(models.Model):
     title = models.CharField(max_length=200)
     report_type = models.CharField(max_length=20, choices=REPORT_TYPE_CHOICES)
 
-    created_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name='reports_created'
-    )
+    #created_by = models.ForeignKey(
+    #   User, on_delete=models.SET_NULL, null=True, related_name='reports_created'
+    #)
+    created_by_name = models.CharField(max_length=100)
     recipient = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name='reports_received'
     )
@@ -101,6 +103,7 @@ class Report(models.Model):
     forecasts = models.ManyToManyField(Forecast, blank=True, related_name='reports')
 
     content = models.TextField()
+    location = models.CharField(max_length=255, blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True, blank=True)

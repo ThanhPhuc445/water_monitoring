@@ -1,108 +1,110 @@
-{% extends "base.html" %}
-{% block title %}Danh sách báo cáo{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Báo cáo chất lượng nước{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <div class="card shadow-lg border-0">
-        <!-- Header -->
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">Danh sách báo cáo</h4>
-            {% if user.role == "admin" %}
-                <a href="{% url 'report_create' %}" class="btn btn-light btn-sm">
-                    ➕ Tạo báo cáo
-                </a>
-            {% endif %}
-        </div>
-
-        <!-- Search bar -->
+    <div class="card shadow-sm border-0 rounded-4">
         <div class="card-body">
-            <form method="get" class="mb-3">
-                <div class="input-group">
-                    <input type="text" name="q" class="form-control" placeholder="🔍 Tìm kiếm báo cáo...">
-                    <button class="btn btn-outline-primary" type="submit">Tìm</button>
+            
+            <!-- PHẦN TIÊU ĐỀ -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold text-primary mb-0">
+                    <i class="fas fa-file-contract me-2"></i>Báo cáo chất lượng nước
+                </h2>
+                <a href="{% url 'report_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i> Tạo báo cáo mới
+                </a>
+            </div>
+
+            <!-- PHẦN BỘ LỌC -->
+            <form method="get" class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <input type="text" name="q" value="{{ request.GET.q }}" 
+                           class="form-control" placeholder="Tìm theo tiêu đề hoặc người tạo...">
+                </div>
+                <div class="col-md-2">
+                    <select name="quality_status" class="form-select">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="normal" {% if request.GET.quality_status == 'normal' %}selected{% endif %}>Đạt chuẩn</option>
+                        <option value="warning" {% if request.GET.quality_status == 'warning' %}selected{% endif %}>Cần quan tâm</option>
+                        <option value="critical" {% if request.GET.quality_status == 'critical' %}selected{% endif %}>Vượt ngưỡng</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="form-control">
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary flex-fill">
+                        <i class="fas fa-search me-2"></i>Lọc
+                    </button>
+                    <a href="{% url 'report_list' %}" class="btn btn-outline-secondary flex-fill">
+                        <i class="fas fa-redo me-2"></i>Reset
+                    </a>
                 </div>
             </form>
 
-            <!-- Table -->
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Tiêu đề</th>
-                            <th>Người nhận</th>
-                            <th>Người tạo</th>
-                            <th>Loại</th>
-                            <th>Ngày tạo</th>
-                            <th>Trạng thái</th>
-                            <th class="text-center">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for report in reports %}
-                        <tr>
-                            <td class="fw-semibold">{{ report.title }}</td>
-                            <td>{{ report.recipient.username }}</td>
-                            <td>{{ report.created_by.username }}</td>
-                            <td>
-                                <span class="badge bg-secondary">
-                                    {{ report.get_report_type_display }}
-                                </span>
-                            </td>
-                            <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
-                            <td>
-                                {% if report.status == "draft" %}
-                                    <span class="badge bg-warning text-dark">Bản nháp</span>
-                                {% elif report.status == "published" %}
-                                    <span class="badge bg-success">Đã xuất bản</span>
-                                {% else %}
-                                    <span class="badge bg-info">Khác</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                                            type="button" 
-                                            data-bs-toggle="dropdown" 
-                                            aria-expanded="false">
-                                        ⚙️
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'report_detail' report.id %}">
-                                                👁️ Xem
-                                            </a>
-                                        </li>
-                                        {% if user.role == "admin" %}
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'report_edit' report.id %}">
-                                                ✏️ Sửa
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <form method="post" 
-                                                  action="{% url 'report_delete' report.id %}" 
-                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa báo cáo này?');">
-                                                {% csrf_token %}
-                                                <button type="submit" class="dropdown-item text-danger">
-                                                    🗑️ Xóa
-                                                </button>
-                                            </form>
-                                        </li>
+            <!-- DANH SÁCH BÁO CÁO -->
+            {% if reports %}
+                <div class="list-group">
+                    {% for report in reports %}
+                        <div class="list-group-item py-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="mb-1 text-primary fw-bold">{{ report.title }}</h5>
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>{{ report.created_by_name }} • 
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ report.location|default:"Chưa có địa điểm" }}
+                                    </small>
+
+                                    <p class="mt-2 mb-0">
+                                        {% if report.quality_status == "normal" %}
+                                            <span class="badge bg-success">Đạt chuẩn</span>
+                                        {% elif report.quality_status == "warning" %}
+                                            <span class="badge bg-warning text-dark">Cần quan tâm</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Vượt ngưỡng</span>
                                         {% endif %}
-                                    </ul>
+                                    </p>
                                 </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
-                                🚫 Chưa có báo cáo nào.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+
+                                <!-- Nút thao tác -->
+                                <div class="text-end">
+                                    <a href="{% url 'report_detail' report.id %}" class="btn btn-sm btn-outline-primary me-1" title="Xem chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if user.is_superuser or user.role == "admin" %}
+                                    <a href="{% url 'report_edit' report.id %}" class="btn btn-sm btn-outline-warning me-1" title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form method="post" action="{% url 'report_delete' report.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"
+                                                onclick="return confirm('Xóa báo cáo này?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-4x text-secondary mb-3"></i>
+                    <h5>Chưa có báo cáo nào</h5>
+                    <p class="text-muted">Hãy tạo báo cáo chất lượng nước đầu tiên</p>
+                    <a href="{% url 'report_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i> Tạo báo cáo đầu tiên
+                    </a>
+                </div>
+            {% endif %}
+
         </div>
     </div>
 </div>

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                {% if report %}Chỉnh sửa báo cáo{% else %}Tạo mới báo cáo{% endif %}
+            </h4>
+        </div>
+
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <!-- Tiêu đề -->
+                <div class="mb-3">
+                    <label for="id_title" class="form-label fw-semibold">Tiêu đề báo cáo</label>
+                    {{ form.title }}
+                </div>
+
+                <!-- Loại báo cáo -->
+                <div class="mb-3">
+                    <label for="id_report_type" class="form-label fw-semibold">Loại báo cáo</label>
+                    {{ form.report_type }}
+                </div>
+
+                <!-- Người tạo -->
+                <div class="mb-3">
+                    <label for="id_created_by_name" class="form-label fw-semibold">Người tạo</label>
+                    {{ form.created_by_name }}
+                </div>
+
+                <!-- Thiết bị -->
+                <div class="mb-3">
+                    <label for="id_device" class="form-label fw-semibold">Thiết bị đo</label>
+                    {{ form.device }}
+                    <div class="form-text text-muted">
+                        (Chọn thiết bị: độ pH, NTU hoặc TDS)
+                    </div>
+                </div>
+
+                <!-- Đọc dữ liệu -->
+                <div class="mb-3">
+                    <label for="id_readings" class="form-label fw-semibold">Dữ liệu đo thực tế</label>
+                    <div class="border rounded p-2 bg-light">
+                        {{ form.readings }}
+                    </div>
+                </div>
+
+                <!-- Dự báo -->
+                <div class="mb-3">
+                    <label for="id_forecasts" class="form-label fw-semibold">Dữ liệu dự báo (nếu có)</label>
+                    <div class="border rounded p-2 bg-light">
+                        {{ form.forecasts }}
+                    </div>
+                </div>
+
+                <!-- Nội dung -->
+                <div class="mb-3">
+                    <label for="id_content" class="form-label fw-semibold">Nội dung báo cáo</label>
+                    {{ form.content }}
+                </div>
+
+                <!-- Trạng thái -->
+                <div class="mb-3">
+                    <label for="id_status" class="form-label fw-semibold">Trạng thái</label>
+                    {{ form.status }}
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-success px-4">
+                        {% if report %}<i class="bi bi-save"></i> Lưu thay đổi
+                        {% else %}<i class="bi bi-plus-circle"></i> Tạo báo cáo{% endif %}
+                    </button>
+                    <a href="{% url 'report_list' %}" class="btn btn-secondary ms-2">Hủy</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
