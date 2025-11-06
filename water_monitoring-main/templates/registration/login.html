@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Đăng nhập - Water Monitor{% endblock %}
+
+{% block auth_content %}
+<div class="auth-container">
+    <div class="auth-header">
+        <div class="auth-logo">
+            <i class="bi bi-droplet-fill"></i>
+        </div>
+        <h2 class="auth-title">Đăng nhập</h2>
+        <p class="text-muted">Chào mừng trở lại hệ thống</p>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label for="id_username" class="form-label">Tên đăng nhập</label>
+            <input type="text" name="username" class="form-control" id="id_username" 
+                   placeholder="Nhập tên đăng nhập" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_password" class="form-label">Mật khẩu</label>
+            <input type="password" name="password" class="form-control" id="id_password" 
+                   placeholder="Nhập mật khẩu" required>
+        </div>
+
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                Tên đăng nhập hoặc mật khẩu không đúng.
+            </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-auth">
+            <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
+        </button>
+
+        {% if request.GET.next %}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+        {% endif %}
+    </form>
+
+    <div class="auth-links">
+        <p><a href="{% url 'password_reset' %}">Quên mật khẩu?</a></p>
+        <p>Chưa có tài khoản? <a href="{% url 'register' %}">Đăng ký ngay</a></p>
+    </div>
+</div>
+{% endblock %}

@@ -9,7 +9,19 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">📊 Dữ liệu cảm biến chất lượng nước</h5>
-                    <span class="badge bg-primary">Tổng: {{ total_readings }} bản ghi</span>
+                    <div>
+                        <!-- Thêm nút phân tích tất cả -->
+                        <button id="analyzeAllBtn" class="btn btn-warning me-2">
+                            <i class="fas fa-bolt"></i> Phân Tích Tất Cả
+                        </button>
+                        
+                        <span class="badge bg-primary">Tổng: {{ total_readings }} bản ghi</span>
+                        {% if ai_status.is_loaded %}
+                            <span class="badge bg-success ms-2">AI Đã sẵn sàng</span>
+                        {% else %}
+                            <span class="badge bg-warning ms-2">Sử dụng Rule-based</span>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="card-body">
                     {% if readings %}
@@ -30,12 +42,8 @@
                                 </thead>
                                 <tbody>
                                     {% for reading in readings %}
-                                    <tr>
-                                        <td>
-                                            <a href="{% url 'reading_detail' reading.pk %}" class="text-decoration-none">
-                                                {{ reading.pk }}
-                                            </a>
-                                        </td>
+                                    <tr class="clickable-row" data-reading-id="{{ reading.id }}" style="cursor: pointer;">
+                                        <td>{{ reading.id }}</td>
                                         <td>
                                             <small>{{ reading.timestamp|date:"d/m/Y" }}</small><br>
                                             <strong>{{ reading.timestamp|time:"H:i:s" }}</strong>
@@ -56,50 +64,61 @@
                                             </span>
                                         </td>
                                         <td>
-                                            {% if reading.ai_prediction is not None %}
-                                                <div class="mb-1">
-                                                    <span class="badge {% if reading.ai_prediction == 1 %}bg-success{% else %}bg-danger{% endif %}">
-                                                        {% if reading.ai_prediction == 1 %}✅ AN TOÀN{% else %}❌ RỦI RO{% endif %}
-                                                    </span>
-                                                </div>
-                                                <div class="mb-1">
-                                                    <small class="badge bg-info">{{ reading.ai_quality_level|default:"N/A" }}</small>
-                                                </div>
-                                                <div class="mb-1">
-                                                    <small class="text-muted">{{ reading.ai_safe_probability }}% tin cậy</small>
-                                                </div>
-                                                <div>
-                                                    <small class="badge bg-{% if reading.ai_risk_level == 'LOW' %}success{% elif reading.ai_risk_level == 'MEDIUM' %}warning{% else %}danger{% endif %}">
-                                                        {% if reading.ai_risk_level == 'LOW' %}THẤP{% elif reading.ai_risk_level == 'MEDIUM' %}TB{% else %}CAO{% endif %}
-                                                    </small>
-                                                </div>
+                                            {% if reading.ai_prediction == 1 %}
+                                                <span class="badge bg-success">
+                                                    ✅ AN TOÀN
+                                                </span>
+                                                <br>
+                                                <small class="text-muted">
+                                                    {% if reading.ai_safe_probability %}
+                                                        {{ reading.ai_safe_probability|floatformat:1 }}%
+                                                    {% else %}
+                                                        {{ reading.ai_quality_level }}
+                                                    {% endif %}
+                                                </small>
+                                            {% elif reading.ai_prediction == 0 %}
+                                                <span class="badge bg-danger">
+                                                    ❌ RỦI RO
+                                                </span>
+                                                <br>
+                                                <small class="text-muted">
+                                                    {% if reading.ai_safe_probability %}
+                                                        {{ reading.ai_safe_probability|floatformat:1 }}%
+                                                    {% else %}
+                                                        {{ reading.ai_quality_level }}
+                                                    {% endif %}
+                                                </small>
                                             {% else %}
                                                 <span class="badge bg-secondary">Chưa phân tích</span>
+                                                <br>
+                                                <small class="text-muted">
+                                                    <a href="#" class="text-muted" onclick="analyzeSingleReading({{ reading.id }})">Phân tích ngay</a>
+                                                </small>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if reading.battery %}
-                                                <span class="badge {% if reading.battery >= 50 %}bg-success{% elif reading.battery >= 20 %}bg-warning{% else %}bg-danger{% endif %}">
-                                                    {{ reading.battery|floatformat:1 }}%
+                                                <span class="badge {% if reading.battery > 70 %}bg-success{% elif reading.battery > 30 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ reading.battery|floatformat:0 }}%
                                                 </span>
                                             {% else %}
-                                                <span class="text-muted">-</span>
+                                                <span class="badge bg-secondary">-</span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if reading.signal %}
-                                                <span class="badge {% if reading.signal >= -70 %}bg-success{% elif reading.signal >= -85 %}bg-warning{% else %}bg-danger{% endif %}">
-                                                    {{ reading.signal|floatformat:0 }} dBm
+                                                <span class="badge {% if reading.signal > 70 %}bg-success{% elif reading.signal > 30 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ reading.signal|floatformat:0 }}%
                                                 </span>
                                             {% else %}
-                                                <span class="text-muted">-</span>
+                                                <span class="badge bg-secondary">-</span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             {% if reading.device %}
                                                 <span class="badge bg-info">{{ reading.device.name }}</span>
                                             {% else %}
-                                                <span class="text-muted">Không xác định</span>
+                                                <span class="badge bg-secondary">Không xác định</span>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -108,14 +127,39 @@
                             </table>
                         </div>
                         
-                        <!-- Pagination nếu cần -->
-                        {% if readings|length >= 50 %}
+                        <!-- Pagination -->
+                        {% if readings.has_other_pages %}
                         <nav aria-label="Phân trang">
                             <ul class="pagination justify-content-center">
-                                <li class="page-item">
-                                    <a class="page-link" href="?page=1">Đầu</a>
-                                </li>
-                                <!-- Thêm pagination logic ở đây nếu cần -->
+                                {% if readings.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">Đầu</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ readings.previous_page_number }}">Trước</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in readings.paginator.page_range %}
+                                    {% if readings.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > readings.number|add:'-3' and num < readings.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if readings.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ readings.next_page_number }}">Tiếp</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ readings.paginator.num_pages }}">Cuối</a>
+                                    </li>
+                                {% endif %}
                             </ul>
                         </nav>
                         {% endif %}
@@ -140,9 +184,9 @@
                 <div class="card-body">
                     <h6 class="card-title">📈 pH Trung bình</h6>
                     <h4 class="text-primary">
-                        {% for reading in readings %}
-                            {% if forloop.first %}{{ reading.ph|floatformat:2 }}{% endif %}
-                        {% endfor %}
+                        {% with first_reading=readings.first %}
+                            {{ first_reading.ph|floatformat:2 }}
+                        {% endwith %}
                     </h4>
                 </div>
             </div>
@@ -152,9 +196,9 @@
                 <div class="card-body">
                     <h6 class="card-title">💧 TDS Trung bình</h6>
                     <h4 class="text-info">
-                        {% for reading in readings %}
-                            {% if forloop.first %}{{ reading.tds|floatformat:0 }} ppm{% endif %}
-                        {% endfor %}
+                        {% with first_reading=readings.first %}
+                            {{ first_reading.tds|floatformat:0 }} ppm
+                        {% endwith %}
                     </h4>
                 </div>
             </div>
@@ -164,9 +208,9 @@
                 <div class="card-body">
                     <h6 class="card-title">🌊 NTU Trung bình</h6>
                     <h4 class="text-success">
-                        {% for reading in readings %}
-                            {% if forloop.first %}{{ reading.ntu|floatformat:2 }}{% endif %}
-                        {% endfor %}
+                        {% with first_reading=readings.first %}
+                            {{ first_reading.ntu|floatformat:2 }}
+                        {% endwith %}
                     </h4>
                 </div>
             </div>
@@ -176,14 +220,14 @@
                 <div class="card-body">
                     <h6 class="card-title">🕒 Cập nhật cuối</h6>
                     <p class="text-secondary mb-1">
-                        {% for reading in readings %}
-                            {% if forloop.first %}{{ reading.timestamp|date:"d/m/Y" }}{% endif %}
-                        {% endfor %}
+                        {% with first_reading=readings.first %}
+                            {{ first_reading.timestamp|date:"d/m/Y" }}
+                        {% endwith %}
                     </p>
                     <small class="text-muted">
-                        {% for reading in readings %}
-                            {% if forloop.first %}{{ reading.timestamp|time:"H:i:s" }}{% endif %}
-                        {% endfor %}
+                        {% with first_reading=readings.first %}
+                            {{ first_reading.timestamp|time:"H:i:s" }}
+                        {% endwith %}
                     </small>
                 </div>
             </div>
@@ -192,11 +236,425 @@
     {% endif %}
 </div>
 
-<!-- Auto refresh -->
+<!-- Modal hiển thị AI phân tích chi tiết -->
+<div class="modal fade" id="aiAnalysisModal" tabindex="-1" aria-labelledby="aiAnalysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="aiAnalysisModalLabel">
+                    <i class="fas fa-robot"></i> 🤖 PHÂN TÍCH AI CHI TIẾT
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="aiAnalysisContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="mt-2">Đang tải phân tích AI...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal loading khi phân tích tất cả -->
+<div class="modal fade" id="analyzeAllModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">
+                    <i class="fas fa-bolt"></i> Đang Phân Tích...
+                </h5>
+            </div>
+            <div class="modal-body text-center">
+                <div class="spinner-border text-warning mb-3" role="status">
+                    <span class="visually-hidden">Đang phân tích...</span>
+                </div>
+                <p id="analyzeProgressText">Đang chuẩn bị phân tích tất cả dữ liệu...</p>
+                <div class="progress mb-3">
+                    <div id="analyzeProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                         role="progressbar" style="width: 0%">0%</div>
+                </div>
+                <div id="analyzeResults" class="small text-muted"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto refresh và JavaScript -->
 <script>
-    // Tự động refresh trang mỗi 10 giây
+    // Tự động refresh trang mỗi 30 giây
     setTimeout(function(){
         location.reload();
-    }, 10000);
+    }, 30000);
+
+    // Xử lý click vào hàng để hiển thị phân tích AI chi tiết
+    document.addEventListener('DOMContentLoaded', function() {
+        const clickableRows = document.querySelectorAll('.clickable-row');
+        
+        clickableRows.forEach(row => {
+            row.addEventListener('click', function() {
+                const readingId = this.getAttribute('data-reading-id');
+                showAIAnalysis(readingId);
+            });
+        });
+
+        // Thêm event listener cho nút phân tích tất cả
+        document.getElementById('analyzeAllBtn').addEventListener('click', function() {
+            analyzeAllReadings();
+        });
+    });
+
+    // Hiển thị modal với phân tích AI
+    function showAIAnalysis(readingId) {
+        const modal = new bootstrap.Modal(document.getElementById('aiAnalysisModal'));
+        const modalContent = document.getElementById('aiAnalysisContent');
+        
+        // Hiển thị loading
+        modalContent.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Đang tải...</span>
+                </div>
+                <p class="mt-2">Đang tải phân tích AI...</p>
+            </div>
+        `;
+        
+        modal.show();
+
+        // Gọi API để lấy phân tích chi tiết
+        fetch(`/api/reading/${readingId}/ai-analysis/`)
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Không tìm thấy dữ liệu cảm biến');
+                    } else if (response.status === 500) {
+                        throw new Error('Lỗi server khi phân tích AI');
+                    } else {
+                        throw new Error(`Lỗi HTTP: ${response.status}`);
+                    }
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Hiển thị kết quả phân tích
+                    modalContent.innerHTML = createAIAnalysisHTML(data);
+                } else {
+                    throw new Error(data.error || 'Lỗi không xác định từ server');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                modalContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h6>Lỗi khi tải phân tích AI</h6>
+                        <p class="mb-0">${error.message}</p>
+                        <small class="text-muted">Vui lòng thử lại sau hoặc kiểm tra kết nối</small>
+                    </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-primary" onclick="showAIAnalysis(${readingId})">
+                            Thử lại
+                        </button>
+                    </div>
+                `;
+            });
+    }
+
+    // Phân tích từng reading
+    function analyzeSingleReading(readingId) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        fetch(`/api/reading/${readingId}/ai-analysis/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    location.reload();
+                } else {
+                    alert('Lỗi phân tích: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Lỗi kết nối: ' + error);
+            });
+    }
+
+    // Phân tích tất cả các bản ghi chưa được phân tích
+    async function analyzeAllReadings() {
+        const analyzeBtn = document.getElementById('analyzeAllBtn');
+        const modal = new bootstrap.Modal(document.getElementById('analyzeAllModal'));
+        const progressText = document.getElementById('analyzeProgressText');
+        const progressBar = document.getElementById('analyzeProgressBar');
+        const resultsDiv = document.getElementById('analyzeResults');
+
+        // Vô hiệu hóa nút trong khi đang xử lý
+        analyzeBtn.disabled = true;
+        
+        // Hiển thị modal
+        modal.show();
+        progressText.textContent = 'Đang tìm kiếm các bản ghi chưa phân tích...';
+        progressBar.style.width = '0%';
+        progressBar.textContent = '0%';
+        resultsDiv.innerHTML = '';
+
+        try {
+            // Lấy danh sách các bản ghi chưa phân tích
+            const response = await fetch('/api/readings/unanalyzed/');
+            if (!response.ok) {
+                throw new Error('Không thể lấy danh sách bản ghi chưa phân tích');
+            }
+
+            const data = await response.json();
+            const unanalyzedReadings = data.readings || [];
+            
+            if (unanalyzedReadings.length === 0) {
+                progressText.textContent = '🎉 Tất cả bản ghi đã được phân tích!';
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+                resultsDiv.innerHTML = '<div class="text-success">Không có bản ghi nào cần phân tích.</div>';
+                analyzeBtn.disabled = false;
+                
+                // Refresh để đảm bảo hiển thị mới nhất
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+                return;
+            }
+
+            progressText.textContent = `Đang phân tích ${unanalyzedReadings.length} bản ghi...`;
+            
+            let processed = 0;
+            let successCount = 0;
+            let errorCount = 0;
+
+            // Phân tích từng bản ghi
+            for (const reading of unanalyzedReadings) {
+                try {
+                    const analysisResponse = await fetch(`/api/reading/${reading.id}/ai-analysis/`);
+                    if (analysisResponse.ok) {
+                        const result = await analysisResponse.json();
+                        if (result.status === 'success') {
+                            successCount++;
+                        } else {
+                            errorCount++;
+                        }
+                    } else {
+                        errorCount++;
+                    }
+                } catch (error) {
+                    errorCount++;
+                    console.error(`Lỗi phân tích reading ${reading.id}:`, error);
+                }
+
+                processed++;
+                const progress = Math.round((processed / unanalyzedReadings.length) * 100);
+                progressBar.style.width = `${progress}%`;
+                progressBar.textContent = `${progress}%`;
+                
+                resultsDiv.innerHTML = `
+                    <div>✅ Đã phân tích: ${successCount}</div>
+                    <div>❌ Lỗi: ${errorCount}</div>
+                    <div>📊 Tiến trình: ${processed}/${unanalyzedReadings.length}</div>
+                `;
+            }
+
+            // Hoàn thành
+            progressText.textContent = 'Phân tích hoàn tất!';
+            resultsDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <strong>🎉 Phân tích hoàn tất!</strong><br>
+                    ✅ Thành công: ${successCount} bản ghi<br>
+                    ❌ Lỗi: ${errorCount} bản ghi<br>
+                    📊 Tổng số: ${unanalyzedReadings.length} bản ghi
+                </div>
+            `;
+
+            // Đảm bảo reload sau khi phân tích
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+
+        } catch (error) {
+            console.error('Error analyzing all readings:', error);
+            progressText.textContent = 'Lỗi khi phân tích';
+            resultsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <strong>❌ Lỗi:</strong> ${error.message}
+                </div>
+            `;
+            
+            // Vẫn reload ngay cả khi có lỗi để hiển thị trạng thái mới
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        } finally {
+            analyzeBtn.disabled = false;
+        }
+    }
+
+    // Tạo HTML cho phân tích AI
+    function createAIAnalysisHTML(data) {
+        const reading = data.reading;
+        const analysis = data.ai_analysis;
+        
+        // Đảm bảo các giá trị tồn tại
+        const ph = reading.ph || 0;
+        const tds = reading.tds || 0;
+        const ntu = reading.ntu || 0;
+        
+        return `
+            <div class="ai-analysis-content">
+                <!-- Thông tin cơ bản -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>📊 Thông tin mẫu</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>ID:</strong></td><td>${reading.id}</td></tr>
+                            <tr><td><strong>Thời gian:</strong></td><td>${reading.timestamp}</td></tr>
+                            <tr><td><strong>pH:</strong></td><td>${ph}</td></tr>
+                            <tr><td><strong>TDS:</strong></td><td>${tds} ppm</td></tr>
+                            <tr><td><strong>NTU:</strong></td><td>${ntu}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>🤖 Kết quả AI</h6>
+                        <div class="text-center p-3 border rounded ${analysis.is_safe ? 'bg-success bg-opacity-10' : 'bg-danger bg-opacity-10'}">
+                            <h4 class="${analysis.is_safe ? 'text-success' : 'text-danger'}">
+                                ${analysis.is_safe ? '✅ AN TOÀN' : '❌ KHÔNG AN TOÀN'}
+                            </h4>
+                            <div class="progress mt-2" style="height: 20px;">
+                                <div class="progress-bar ${analysis.is_safe ? 'bg-success' : 'bg-danger'}" 
+                                     role="progressbar" 
+                                     style="width: ${analysis.safe_probability}%">
+                                    ${analysis.safe_probability}%
+                                </div>
+                            </div>
+                            <small class="text-muted">Độ tin cậy</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chi tiết phân tích -->
+                <div class="row mb-4">
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-2">
+                            <h5 class="${getQualityColor(analysis.quality_level)}">${analysis.quality_level}</h5>
+                            <small class="text-muted">Chất lượng</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-2">
+                            <h5 class="${getRiskColor(analysis.risk_level)}">${analysis.risk_level}</h5>
+                            <small class="text-muted">Mức độ rủi ro</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-2">
+                            <h5 class="text-info">${analysis.model_version}</h5>
+                            <small class="text-muted">Phiên bản AI</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Khuyến nghị -->
+                <div class="mb-4">
+                    <h6>💡 Khuyến nghị</h6>
+                    <div class="alert ${analysis.is_safe ? 'alert-success' : 'alert-warning'}">
+                        ${Array.isArray(analysis.recommendations) ? 
+                          analysis.recommendations.map(rec => `<div class="mb-1">• ${rec}</div>`).join('') : 
+                          '<div class="mb-1">• Không có khuyến nghị</div>'}
+                    </div>
+                </div>
+
+                <!-- Phân tích chi tiết từng chỉ số -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>🧪 Phân tích pH</h6>
+                        <div class="small">
+                            <strong>Giá trị:</strong> ${ph}<br>
+                            <strong>Đánh giá:</strong> ${getPHAssessment(ph)}<br>
+                            <strong>Khoảng an toàn:</strong> 6.5 - 8.5
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>💧 Phân tích TDS</h6>
+                        <div class="small">
+                            <strong>Giá trị:</strong> ${tds} ppm<br>
+                            <strong>Đánh giá:</strong> ${getTDSAssessment(tds)}<br>
+                            <strong>Khuyến nghị:</strong> &lt; 500 ppm
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>🌫️ Phân tích độ đục</h6>
+                        <div class="small">
+                            <strong>Giá trị:</strong> ${ntu} NTU<br>
+                            <strong>Đánh giá:</strong> ${getNTUAssessment(ntu)}<br>
+                            <strong>Khuyến nghị:</strong> &lt; 4 NTU
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 text-muted small">
+                    <i class="fas fa-clock"></i> Phân tích lúc: ${analysis.timestamp || new Date().toLocaleString()}
+                </div>
+            </div>
+        `;
+    }
+
+    // Hàm hỗ trợ
+    function getQualityColor(level) {
+        const colors = {
+            'RẤT TỐT': 'text-success',
+            'TỐT': 'text-success', 
+            'TRUNG BÌNH': 'text-warning',
+            'KÉM': 'text-danger',
+            'RẤT KÉM': 'text-danger',
+            'EXCELLENT': 'text-success',
+            'GOOD': 'text-success',
+            'FAIR': 'text-warning',
+            'POOR': 'text-danger',
+            'VERY_POOR': 'text-danger'
+        };
+        return colors[level] || 'text-muted';
+    }
+
+    function getRiskColor(level) {
+        const colors = {
+            'THẤP': 'text-success',
+            'TRUNG BÌNH': 'text-warning',
+            'CAO': 'text-danger',
+            'LOW': 'text-success',
+            'MEDIUM': 'text-warning',
+            'HIGH': 'text-danger'
+        };
+        return colors[level] || 'text-muted';
+    }
+
+    function getPHAssessment(ph) {
+        if (ph >= 6.5 && ph <= 8.5) return '<span class="text-success">Tốt</span>';
+        if (ph >= 6.0 && ph < 6.5) return '<span class="text-warning">Hơi thấp</span>';
+        if (ph > 8.5 && ph <= 9.0) return '<span class="text-warning">Hơi cao</span>';
+        return '<span class="text-danger">Nguy hiểm</span>';
+    }
+
+    function getTDSAssessment(tds) {
+        if (tds <= 300) return '<span class="text-success">Rất tốt</span>';
+        if (tds <= 500) return '<span class="text-success">Tốt</span>';
+        if (tds <= 1000) return '<span class="text-warning">Trung bình</span>';
+        return '<span class="text-danger">Cao</span>';
+    }
+
+    function getNTUAssessment(ntu) {
+        if (ntu <= 1) return '<span class="text-success">Rất trong</span>';
+        if (ntu <= 4) return '<span class="text-success">Trong</span>';
+        if (ntu <= 10) return '<span class="text-warning">Hơi đục</span>';
+        return '<span class="text-danger">Rất đục</span>';
+    }
 </script>
 {% endblock %}

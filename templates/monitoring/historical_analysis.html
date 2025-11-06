@@ -1,0 +1,402 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Phân tích Lịch sử Chất lượng Nước{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">📊 PHÂN TÍCH LỊCH SỬ CHẤT LƯỢNG NƯỚC</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PHẦN 1: LỰA CHỌN THỜI GIAN -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">⏰ Lựa chọn khoảng thời gian phân tích</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <!-- Tùy chọn nhanh -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tùy chọn nhanh:</label>
+                            <div class="btn-group w-100" role="group">
+                                <button type="submit" name="period" value="7d" class="btn btn-outline-primary {% if period == '7d' %}active{% endif %}">7 Ngày Qua</button>
+                                <button type="submit" name="period" value="30d" class="btn btn-outline-primary {% if period == '30d' %}active{% endif %}">30 Ngày Qua</button>
+                                <button type="submit" name="period" value="90d" class="btn btn-outline-primary {% if period == '90d' %}active{% endif %}">90 Ngày Qua</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Tùy chọn tùy chỉnh -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tùy chỉnh khoảng thời gian:</label>
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <input type="date" class="form-control" name="date_from" value="{{ date_from|default:'' }}">
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="date" class="form-control" name="date_to" value="{{ date_to|default:'' }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="submit" name="period" value="custom" class="btn btn-primary w-100">Áp dụng</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Thông tin khoảng thời gian -->
+                    {% if total_readings > 0 %}
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <strong>📅 Khoảng thời gian đang xem:</strong> 
+                        {{ date_from }} đến {{ date_to }} 
+                        <span class="badge bg-info ms-2">{{ total_readings }} bản ghi</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kiểm tra dữ liệu -->
+    {% if total_readings == 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                <h5>Không có dữ liệu trong khoảng thời gian này</h5>
+                <p class="mb-0">Vui lòng chọn khoảng thời gian khác hoặc kiểm tra dữ liệu cảm biến.</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- PHẦN 2: BIỂU ĐỒ XU HƯỚNG -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">📈 BIỂU ĐỒ XU HƯỚNG THEO THỜI GIAN</h5>
+                </div>
+                <div class="card-body">
+                    <div id="trendChart" style="height: 500px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PHẦN 3: BẢNG TỔNG HỢP PHÂN TÍCH AI -->
+    <div class="row">
+        <!-- Cột trái: Thống kê và Xu hướng -->
+        <div class="col-md-6">
+            <!-- Thống kê tổng quan -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">📋 THỐNG KÊ TỔNG QUAN</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-3">
+                                <h3 class="text-success">{{ ai_analysis.stats.safe_count|default:0 }}</h3>
+                                <small class="text-muted">Lần AN TOÀN</small>
+                                <div class="mt-1">
+                                    <small class="badge bg-success">
+                                        {{ ai_analysis.stats.safe_percentage|default:0|floatformat:1 }}%
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-3">
+                                <h3 class="text-danger">{{ ai_analysis.stats.unsafe_count|default:0 }}</h3>
+                                <small class="text-muted">Lần CẢNH BÁO</small>
+                                <div class="mt-1">
+                                    <small class="badge bg-danger">
+                                        {{ ai_analysis.stats.unsafe_percentage|default:0|floatformat:1 }}%
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-3">
+                                <h3 class="text-primary">{{ ai_analysis.stats.total_readings|default:0 }}</h3>
+                                <small class="text-muted">TỔNG SỐ MẪU</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <table class="table table-sm">
+                        <tr>
+                            <td>pH trung bình:</td>
+                            <td><strong>{{ ai_analysis.stats.avg_ph|default:0|floatformat:2 }}</strong></td>
+                            <td>({{ ai_analysis.stats.min_ph|default:0|floatformat:1 }} - {{ ai_analysis.stats.max_ph|default:0|floatformat:1 }})</td>
+                        </tr>
+                        <tr>
+                            <td>TDS trung bình:</td>
+                            <td><strong>{{ ai_analysis.stats.avg_tds|default:0|floatformat:0 }} ppm</strong></td>
+                            <td>({{ ai_analysis.stats.min_tds|default:0|floatformat:0 }} - {{ ai_analysis.stats.max_tds|default:0|floatformat:0 }})</td>
+                        </tr>
+                        <tr>
+                            <td>NTU trung bình:</td>
+                            <td><strong>{{ ai_analysis.stats.avg_ntu|default:0|floatformat:2 }}</strong></td>
+                            <td>({{ ai_analysis.stats.min_ntu|default:0|floatformat:2 }} - {{ ai_analysis.stats.max_ntu|default:0|floatformat:2 }})</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Phân tích xu hướng -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">🔄 PHÂN TÍCH XU HƯỚNG</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-2">
+                                <h5 class="{% if ai_analysis.trends.ph_trend == 'TĂNG MẠNH' %}text-danger{% elif ai_analysis.trends.ph_trend == 'GIẢM MẠNH' %}text-warning{% else %}text-success{% endif %}">
+                                    {{ ai_analysis.trends.ph_trend|default:"ỔN ĐỊNH" }}
+                                </h5>
+                                <small class="text-muted">pH</small>
+                                <div class="mt-1">
+                                    <small class="{% if ai_analysis.trends.ph_change > 0 %}text-danger{% elif ai_analysis.trends.ph_change < 0 %}text-success{% else %}text-muted{% endif %}">
+                                        {% if ai_analysis.trends.ph_change > 0 %}+{% endif %}{{ ai_analysis.trends.ph_change|default:0|floatformat:2 }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-2">
+                                <h5 class="{% if ai_analysis.trends.tds_trend == 'TĂNG MẠNH' %}text-danger{% elif ai_analysis.trends.tds_trend == 'GIẢM MẠNH' %}text-warning{% else %}text-success{% endif %}">
+                                    {{ ai_analysis.trends.tds_trend|default:"ỔN ĐỊNH" }}
+                                </h5>
+                                <small class="text-muted">TDS</small>
+                                <div class="mt-1">
+                                    <small class="{% if ai_analysis.trends.tds_change > 0 %}text-danger{% elif ai_analysis.trends.tds_change < 0 %}text-success{% else %}text-muted{% endif %}">
+                                        {% if ai_analysis.trends.tds_change > 0 %}+{% endif %}{{ ai_analysis.trends.tds_change|default:0|floatformat:0 }}ppm
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="border rounded p-2">
+                                <h5 class="{% if ai_analysis.trends.ntu_trend == 'TĂNG MẠNH' %}text-danger{% elif ai_analysis.trends.ntu_trend == 'GIẢM MẠNH' %}text-warning{% else %}text-success{% endif %}">
+                                    {{ ai_analysis.trends.ntu_trend|default:"ỔN ĐỊNH" }}
+                                </h5>
+                                <small class="text-muted">NTU</small>
+                                <div class="mt-1">
+                                    <small class="{% if ai_analysis.trends.ntu_change > 0 %}text-danger{% elif ai_analysis.trends.ntu_change < 0 %}text-success{% else %}text-muted{% endif %}">
+                                        {% if ai_analysis.trends.ntu_change > 0 %}+{% endif %}{{ ai_analysis.trends.ntu_change|default:0|floatformat:2 }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Cảnh báo và Đề xuất -->
+        <div class="col-md-6">
+            <!-- Cảnh báo bất thường -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0">⚠️ CẢNH BÁO BẤT THƯỜNG</h6>
+                </div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    {% if ai_analysis.anomalies %}
+                        {% for anomaly in ai_analysis.anomalies %}
+                        <div class="alert {% if anomaly.severity == 'CAO' %}alert-danger{% else %}alert-warning{% endif %} py-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ anomaly.type }}</strong>
+                                <small>{{ anomaly.timestamp|date:"m/d H:i" }}</small>
+                            </div>
+                            <div class="small">{{ anomaly.message }}</div>
+                            <small class="text-muted">Giá trị: {{ anomaly.value }}</small>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                            <p>Không có cảnh báo bất thường</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Đề xuất của AI -->
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">💡 ĐỀ XUẤT CỦA AI</h6>
+                </div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    {% if ai_analysis.recommendations %}
+                        {% for rec in ai_analysis.recommendations %}
+                        <div class="border-start border-{% if rec.priority == 'CAO' %}danger{% elif rec.priority == 'TRUNG BÌNH' %}warning{% else %}success{% endif %} border-3 ps-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong class="text-{% if rec.priority == 'CAO' %}danger{% elif rec.priority == 'TRUNG BÌNH' %}warning{% else %}success{% endif %}">
+                                    {{ rec.type }}
+                                </strong>
+                                <span class="badge bg-{% if rec.priority == 'CAO' %}danger{% elif rec.priority == 'TRUNG BÌNH' %}warning{% else %}success{% endif %}">
+                                    {{ rec.priority }}
+                                </span>
+                            </div>
+                            <p class="mb-1 small">{{ rec.message }}</p>
+                            <p class="text-muted small mb-0"><strong>Hành động:</strong> {{ rec.action }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-thumbs-up fa-2x text-success mb-2"></i>
+                            <p>Mọi thứ đều ổn! Không có đề xuất nào.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}  <!-- Kết thúc if total_readings > 0 -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if total_readings > 0 and chart_data %}
+            const chartData = {{ chart_data|safe }};
+            
+            console.log("Dữ liệu biểu đồ:", chartData);
+            
+            // Kiểm tra dữ liệu
+            if (!chartData.timestamps || chartData.timestamps.length === 0) {
+                document.getElementById('trendChart').innerHTML = 
+                    '<div class="alert alert-warning text-center p-4">' +
+                    '<i class="fas fa-exclamation-triangle fa-2x mb-2"></i>' +
+                    '<p>Không có dữ liệu để hiển thị biểu đồ</p>' +
+                    '</div>';
+                return;
+            }
+
+            try {
+                // Tạo traces cho từng chỉ số
+                const traces = [];
+                
+                // Trace cho pH
+                if (chartData.ph && chartData.ph.length > 0) {
+                    traces.push({
+                        x: chartData.timestamps,
+                        y: chartData.ph,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: 'pH',
+                        line: {color: '#1f77b4', width: 2},
+                        marker: {size: 4},
+                        yaxis: 'y'
+                    });
+                }
+                
+                // Trace cho TDS
+                if (chartData.tds && chartData.tds.length > 0) {
+                    traces.push({
+                        x: chartData.timestamps,
+                        y: chartData.tds,
+                        type: 'scatter',
+                        mode: 'lines+markers', 
+                        name: 'TDS (ppm)',
+                        line: {color: '#ff7f0e', width: 2},
+                        marker: {size: 4},
+                        yaxis: 'y2'
+                    });
+                }
+                
+                // Trace cho NTU
+                if (chartData.ntu && chartData.ntu.length > 0) {
+                    traces.push({
+                        x: chartData.timestamps,
+                        y: chartData.ntu,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: 'NTU',
+                        line: {color: '#2ca02c', width: 2},
+                        marker: {size: 4},
+                        yaxis: 'y3'
+                    });
+                }
+
+                // Layout cho biểu đồ
+                const layout = {
+                    title: {
+                        text: 'DIỄN BIẾN CHẤT LƯỢNG NƯỚC THEO THỜI GIAN',
+                        font: {size: 16}
+                    },
+                    height: 500,
+                    showlegend: true,
+                    legend: {
+                        orientation: 'h',
+                        y: -0.2,
+                        x: 0.5,
+                        xanchor: 'center'
+                    },
+                    margin: {t: 60, r: 50, b: 80, l: 50},
+                    grid: {rows: 3, columns: 1, pattern: 'independent'},
+                    xaxis: {
+                        domain: [0, 1],
+                        title: 'Thời gian',
+                        type: 'date',
+                        tickformat: '%d/%m %H:%M'
+                    },
+                    yaxis: {
+                        title: 'pH',
+                        domain: [0.66, 1.0],
+                        rangemode: 'tozero',
+                        tickformat: '.1f'
+                    },
+                    yaxis2: {
+                        title: 'TDS (ppm)',
+                        domain: [0.33, 0.65],
+                        rangemode: 'tozero',
+                        tickformat: ',d'
+                    },
+                    yaxis3: {
+                        title: 'NTU',
+                        domain: [0.0, 0.32],
+                        rangemode: 'tozero',
+                        tickformat: '.2f'
+                    }
+                };
+
+                // Cấu hình responsive
+                const config = {
+                    responsive: true,
+                    displayModeBar: true,
+                    displaylogo: false,
+                    modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
+                    modeBarButtonsToAdd: ['zoomIn2d', 'zoomOut2d', 'resetScale2d']
+                };
+
+                // Vẽ biểu đồ
+                Plotly.newPlot('trendChart', traces, layout, config);
+                
+                console.log("Biểu đồ đã được vẽ thành công!");
+                
+            } catch (error) {
+                console.error("Lỗi khi vẽ biểu đồ:", error);
+                document.getElementById('trendChart').innerHTML = 
+                    '<div class="alert alert-danger text-center p-4">' +
+                    '<i class="fas fa-exclamation-triangle fa-2x mb-2"></i>' +
+                    '<p>Lỗi khi vẽ biểu đồ: ' + error.message + '</p>' +
+                    '</div>';
+            }
+        {% endif %}
+    });
+</script>
+{% endblock %}

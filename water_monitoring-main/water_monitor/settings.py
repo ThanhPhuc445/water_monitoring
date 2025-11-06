@@ -20,7 +20,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'monitoring',
+    'monitoring.apps.MonitoringConfig',
+
 ]
 
 MIDDLEWARE = [

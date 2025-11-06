@@ -7,107 +7,14 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
         <div>
-            <!-- THÊM NÚT PHÂN TÍCH LỊCH SỬ VÀO ĐÂY -->
-            <a href="{% url 'historical_analysis' %}" class="btn btn-outline-primary me-2">
-                <i class="bi bi-chart-line"></i> Phân tích Lịch sử
-            </a>
             <span class="badge bg-info">{{ user_role|title }}</span>
             <span class="badge bg-secondary">{{ user.username }}</span>
         </div>
     </div>
 
-    <!-- Kết quả AI phân tích -->
+    <!-- Thống kê từ dữ liệu thực -->
     {% if latest_readings %}
         {% with latest_reading=latest_readings.0 %}
-        {% if latest_reading.ai_prediction is not None %}
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card border-{% if latest_reading.ai_prediction == 1 %}success{% else %}danger{% endif %}">
-                    <div class="card-header bg-{% if latest_reading.ai_prediction == 1 %}success{% else %}danger{% endif %} text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-robot"></i> 🤖 Kết quả phân tích AI
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3 text-center">
-                                <div class="mb-2">
-                                    {% if latest_reading.ai_prediction == 1 %}
-                                        <i class="bi bi-shield-check fs-1 text-success"></i>
-                                    {% else %}
-                                        <i class="bi bi-shield-x fs-1 text-danger"></i>
-                                    {% endif %}
-                                </div>
-                                <h4 class="{% if latest_reading.ai_prediction == 1 %}text-success{% else %}text-danger{% endif %}">
-                                    {% if latest_reading.ai_prediction == 1 %}AN TOÀN{% else %}KHÔNG AN TOÀN{% endif %}
-                                </h4>
-                                <p class="text-muted">Đánh giá AI</p>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <div class="mb-2">
-                                    <i class="bi bi-speedometer2 fs-1 text-info"></i>
-                                </div>
-                                <h4 class="text-info">{{ latest_reading.ai_quality_level|default:"N/A" }}</h4>
-                                <p class="text-muted">Chất lượng</p>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <div class="mb-2">
-                                    <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar bg-{% if latest_reading.ai_safe_probability >= 70 %}success{% elif latest_reading.ai_safe_probability >= 50 %}warning{% else %}danger{% endif %}" 
-                                             role="progressbar" 
-                                             style="width: {{ latest_reading.ai_safe_probability }}%"
-                                             aria-valuenow="{{ latest_reading.ai_safe_probability }}" 
-                                             aria-valuemin="0" 
-                                             aria-valuemax="100">
-                                            {{ latest_reading.ai_safe_probability }}%
-                                        </div>
-                                    </div>
-                                </div>
-                                <h4 class="{% if latest_reading.ai_safe_probability >= 70 %}text-success{% elif latest_reading.ai_safe_probability >= 50 %}text-warning{% else %}text-danger{% endif %}">
-                                    {{ latest_reading.ai_safe_probability }}%
-                                </h4>
-                                <p class="text-muted">Độ tin cậy</p>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <div class="mb-2">
-                                    {% if latest_reading.ai_risk_level == 'LOW' %}
-                                        <i class="bi bi-check-circle fs-1 text-success"></i>
-                                    {% elif latest_reading.ai_risk_level == 'MEDIUM' %}
-                                        <i class="bi bi-exclamation-triangle fs-1 text-warning"></i>
-                                    {% else %}
-                                        <i class="bi bi-x-circle fs-1 text-danger"></i>
-                                    {% endif %}
-                                </div>
-                                <h4 class="{% if latest_reading.ai_risk_level == 'LOW' %}text-success{% elif latest_reading.ai_risk_level == 'MEDIUM' %}text-warning{% else %}text-danger{% endif %}">
-                                    {% if latest_reading.ai_risk_level == 'LOW' %}THẤP{% elif latest_reading.ai_risk_level == 'MEDIUM' %}TRUNG BÌNH{% else %}CAO{% endif %}
-                                </h4>
-                                <p class="text-muted">Mức độ rủi ro</p>
-                            </div>
-                        </div>
-                        {% if latest_reading.ai_recommendations %}
-                        <div class="mt-3">
-                            <h6><i class="bi bi-lightbulb"></i> Khuyến nghị từ AI:</h6>
-                            <div class="alert alert-info">
-                                {% for recommendation in latest_reading.ai_recommendations %}
-                                    <div>• {{ recommendation }}</div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                        <small class="text-muted">
-                            <i class="bi bi-clock"></i> Phân tích lúc: {{ latest_reading.ai_model_version|default:"V1.0" }} - {{ latest_reading.timestamp|date:"d/m/Y H:i:s" }}
-                            <br>
-                            <a href="{% url 'reading_detail' latest_reading.pk %}" class="btn btn-sm btn-outline-primary mt-2">
-                                <i class="bi bi-eye"></i> Xem chi tiết
-                            </a>
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-    <!-- Thống kê từ dữ liệu thực -->
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card text-center">
@@ -181,13 +88,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">📊 Dữ liệu gần đây</h5>
-                    <div>
-                        <!-- THÊM NÚT PHÂN TÍCH LỊCH SỬ Ở ĐÂY NỮA (TÙY CHỌN) -->
-                        <a href="{% url 'historical_analysis' %}" class="btn btn-sm btn-outline-info me-2">
-                            <i class="bi bi-chart-line"></i> Phân tích Lịch sử
-                        </a>
-                        <a href="{% url 'readings_table' %}" class="btn btn-sm btn-primary">Xem tất cả</a>
-                    </div>
+                    <a href="{% url 'readings_table' %}" class="btn btn-sm btn-primary">Xem tất cả</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -198,7 +99,6 @@
                                     <th>pH</th>
                                     <th>TDS (ppm)</th>
                                     <th>NTU</th>
-                                    <th>🤖 AI</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -222,18 +122,6 @@
                                         <span class="badge {% if reading.ntu <= 4 %}bg-success{% elif reading.ntu <= 10 %}bg-warning{% else %}bg-danger{% endif %}">
                                             {{ reading.ntu|floatformat:2 }}
                                         </span>
-                                    </td>
-                                    <td>
-                                        {% if reading.ai_prediction is not None %}
-                                            <span class="badge {% if reading.ai_prediction == 1 %}bg-success{% else %}bg-danger{% endif %}" 
-                                                  title="{{ reading.ai_quality_level }} - {{ reading.ai_safe_probability }}%">
-                                                {% if reading.ai_prediction == 1 %}✅ AN TOÀN{% else %}❌ RỦI RO{% endif %}
-                                            </span>
-                                            <br>
-                                            <small class="text-muted">{{ reading.ai_safe_probability }}%</small>
-                                        {% else %}
-                                            <span class="badge bg-secondary">Chưa phân tích</span>
-                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -352,12 +240,8 @@
                     <h5 class="card-title"><i class="bi bi-gear"></i> Quản trị hệ thống</h5>
                 </div>
                 <div class="card-body">
-                    <a href="{% url 'admin_dashboard' %}" class="btn btn-primary me-2">
+                    <a href="{% url 'admin_dashboard' %}" class="btn btn-primary">
                         <i class="bi bi-people"></i> Quản lý người dùng
-                    </a>
-                    <!-- THÊM NÚT PHÂN TÍCH LỊCH SỬ CHO ADMIN -->
-                    <a href="{% url 'historical_analysis' %}" class="btn btn-info">
-                        <i class="bi bi-chart-line"></i> Phân tích Lịch sử
                     </a>
                 </div>
             </div>

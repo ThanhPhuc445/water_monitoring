@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Đăng ký - Water Monitor{% endblock %}
+
+{% block auth_content %}
+<div class="auth-container">
+    <div class="auth-header">
+        <div class="auth-logo">
+            <i class="bi bi-droplet-fill"></i>
+        </div>
+        <h2 class="auth-title">Đăng ký tài khoản</h2>
+        <p class="text-muted">Tạo tài khoản để bắt đầu sử dụng hệ thống</p>
+    </div>
+
+    <!-- Hiển thị messages -->
+    {% if messages %}
+    <div class="alert-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label for="id_username" class="form-label">Tên đăng nhập *</label>
+            <input type="text" name="username" class="form-control" id="id_username" 
+                   placeholder="Nhập tên đăng nhập" value="{{ username|default:'' }}" required>
+            <div class="form-text">Tên đăng nhập phải từ 3-30 ký tự, chỉ chứa chữ cái, số và ký tự đặc biệt.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_email" class="form-label">Email *</label>
+            <input type="email" name="email" class="form-control" id="id_email" 
+                   placeholder="Nhập địa chỉ email" value="{{ email|default:'' }}" required>
+            <div class="form-text">Chúng tôi sẽ không chia sẻ email của bạn với bất kỳ ai.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_role" class="form-label">Vai trò *</label>
+            <select name="role" class="form-select" id="id_role" required>
+                <option value="">-- Chọn vai trò --</option>
+                <option value="user" {% if role == 'user' %}selected{% endif %}>Người dùng</option>
+                <option value="admin" {% if role == 'admin' %}selected{% endif %}>Quản trị viên</option>
+            </select>
+            <div class="form-text">
+                <strong>Người dùng:</strong> Có thể xem dữ liệu giám sát<br>
+                <strong>Quản trị viên:</strong> Có toàn quyền quản lý hệ thống
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_password1" class="form-label">Mật khẩu *</label>
+            <input type="password" name="password1" class="form-control" id="id_password1" 
+                   placeholder="Nhập mật khẩu" required>
+            <div class="form-text">Mật khẩu phải có ít nhất 6 ký tự.</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="id_password2" class="form-label">Xác nhận mật khẩu *</label>
+            <input type="password" name="password2" class="form-control" id="id_password2" 
+                   placeholder="Nhập lại mật khẩu" required>
+        </div>
+
+        <button type="submit" class="btn btn-auth w-100">
+            <i class="bi bi-person-plus"></i> Đăng ký
+        </button>
+    </form>
+
+    <div class="auth-links">
+        <p>Đã có tài khoản? <a href="{% url 'login' %}">Đăng nhập ngay</a></p>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-logo {
+    font-size: 3rem;
+    color: #0d6efd;
+    margin-bottom: 1rem;
+}
+
+.auth-title {
+    color: #333;
+    font-weight: 600;
+}
+
+.btn-auth {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-auth:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.alert-container {
+    margin-bottom: 1.5rem;
+}
+
+.auth-links {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.auth-links a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+.form-text {
+    font-size: 0.85rem;
+    color: #6c757d !important;
+    margin-top: 0.25rem;
+}
+</style>
+{% endblock %}

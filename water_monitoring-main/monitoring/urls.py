@@ -1,22 +1,14 @@
 from django.urls import path
 from . import views
-from .views import (
-    AdminOnlyAPIView, UserProfileAPIView, change_user_role, change_password, 
-    historical_analysis_view, latest_reading, upload_reading, readings_table_view, 
-    reading_detail_view, ai_status, analyze_water, upload_reading_strict,
-    get_unanalyzed_readings, analyze_multiple_readings, reading_ai_analysis  # THÊM DÒNG NÀY
-)
+from .views import AdminOnlyAPIView, UserProfileAPIView, change_user_role, change_password, latest_reading, upload_reading, readings_table_view
 
 urlpatterns = [
-    # ... các URLs hiện có ...
-    
     # Template URLs
     path("register/", views.register_view, name="register"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("dashboard/", views.dashboard_view, name="dashboard"),
     path("readings/", readings_table_view, name="readings_table"),
-    path("reading/<int:reading_id>/", reading_detail_view, name="reading_detail"),
     path("admin-dashboard/", views.admin_dashboard_view, name="admin_dashboard"),
     path("password-reset-request/", views.password_reset_request, name="password_reset_request"),
     path("reset-password/<uidb64>/<token>/", views.password_reset_confirm, name="password_reset_confirm"),
@@ -27,16 +19,8 @@ urlpatterns = [
     path("api/user/<int:user_id>/change-role/", change_user_role, name="change_user_role"),
     path("api/user/change-password/", change_password, name="change_password_api"),
     path('api/latest-reading/', latest_reading, name='latest-reading'),
-    
-    # Arduino/Sensor APIs
     path('api/upload-reading/', upload_reading, name='upload-reading'),
-    path('api/upload-reading-strict/', upload_reading_strict, name='upload-reading-strict'),
-    path('api/ai-status/', ai_status, name='ai-status'),
-    path('api/analyze-water/', analyze_water, name='analyze-water'),
     
-    path('api/reading/<int:reading_id>/ai-analysis/', reading_ai_analysis, name='reading_ai_analysis'),
-    path('api/readings/unanalyzed/', get_unanalyzed_readings, name='unanalyzed-readings'),
-    path('api/readings/analyze-multiple/', analyze_multiple_readings, name='analyze-multiple-readings'),
     
-    path('historical-analysis/', historical_analysis_view, name='historical_analysis'),
+
 ]
