@@ -1,0 +1,28 @@
+[33m1ecaf3c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrefactor/remove-water-monitoring[m[33m)[m HEAD@{0}: commit: Lưu lại tiến độ trước khi merge
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{1}: checkout: moving from refactor/remove-water-monitoring to refactor/remove-water-monitoring
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{2}: checkout: moving from refactor/remove-water-monitoring to refactor/remove-water-monitoring
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{3}: checkout: moving from feature/auto-labeling-system to refactor/remove-water-monitoring
+[33m3eac9b4[m[33m ([m[1;31morigin/feature/auto-labeling-system[m[33m, [m[1;32mfeature/auto-labeling-system[m[33m)[m HEAD@{4}: checkout: moving from refactor/remove-water-monitoring to feature/auto-labeling-system
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{5}: reset: moving to HEAD
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{6}: reset: moving to HEAD
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{7}: checkout: moving from main to refactor/remove-water-monitoring
+[33m5e5bcd9[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{8}: reset: moving to 5e5bcd9
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{9}: checkout: moving from refactor/remove-water-monitoring to main
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{10}: checkout: moving from main to refactor/remove-water-monitoring
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{11}: checkout: moving from main to main
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{12}: checkout: moving from refactor/remove-water-monitoring to main
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{13}: checkout: moving from main to refactor/remove-water-monitoring
+[33m918369c[m[33m ([m[1;31morigin/refactor/remove-water-monitoring[m[33m)[m HEAD@{14}: commit: Refactor project: remove water_monitoring, update models, views, templates
+[33m5e5bcd9[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{15}: checkout: moving from main to main
+[33m5e5bcd9[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m HEAD@{16}: commit: Update .gitignore to exclude __pycache__ and pyc files
+[33mc1fec8f[m HEAD@{17}: rebase (finish): returning to refs/heads/main
+[33mc1fec8f[m HEAD@{18}: rebase (continue): Update: thêm chức năng lịch sử đăng nhập và hành động người dùng
+[33mdcabe0b[m HEAD@{19}: commit: Update: thêm chức năng lịch sử đăng nhập và hành động người dùng
+[33m2cc528e[m HEAD@{20}: pull origin main --rebase (start): checkout 2cc528e32bd7cb4836e9d81a770afd8f0ebd4ddf
+[33mb8631b1[m HEAD@{21}: commit: Update: thêm chức năng lịch sử đăng nhập và hành động người dùng
+[33mdb7a15f[m HEAD@{22}: commit (merge): Remove __pycache__ and pyc files
+[33m444e0a3[m HEAD@{23}: reset: moving to HEAD
+[33m444e0a3[m HEAD@{24}: reset: moving to HEAD
+[33m444e0a3[m HEAD@{25}: commit: Remove __pycache__ and ignore Python cache files
+[33mf25cbfd[m HEAD@{26}: checkout: moving from main to main
+[33mf25cbfd[m HEAD@{27}: clone: from https://github.com/ThanhPhuc445/water_monitoring.git

@@ -25,6 +25,8 @@ from monitoring.models import UserActionHistory, LoginHistory
 from django.contrib.admin.views.decorators import staff_member_required
 from .forms import ReportForm
 import json
+from django.db import models
+
 
 # 🔑 Dùng Custom User
 User = get_user_model()
@@ -415,18 +417,25 @@ def is_admin(user):
 @login_required
 def report_list_view(request):
     if request.user.is_staff:
+        # Admin thấy tất cả
         reports = Report.objects.all().order_by('-created_at')
     else:
-        reports = Report.objects.filter(recipient=request.user).order_by('-created_at')
+        # User chỉ thấy báo cáo SENT hoặc được gửi cho họ
+        reports = Report.objects.filter(
+            status='SENT'
+        ).filter(
+            models.Q(recipient=request.user) | models.Q(recipient__isnull=True)
+        ).order_by('-created_at')
+
     return render(request, "monitoring/report_list.html", {"reports": reports})
+
 
 
 @login_required
 def report_detail_view(request, pk):
     report = get_object_or_404(Report, pk=pk)
-    if not request.user.is_staff and report.recipient != request.user:
-        return redirect("report_list")
     return render(request, "monitoring/report_detail.html", {"report": report})
+
 
 
 @login_required

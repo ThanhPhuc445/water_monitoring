@@ -22,10 +22,23 @@
     />
 
     <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+
       body {
+        display: flex;
+        flex-direction: column;
         font-family: "Inter", sans-serif;
         background-color: #f8fafc;
         color: #2d3436;
+      }
+
+      main {
+        flex: 1; /* chiếm khoảng trống còn lại */
+        padding-top: 3rem;
+        padding-bottom: 3rem;
       }
 
       /* Navbar */
@@ -55,9 +68,11 @@
       }
       .hero h1 {
         font-weight: 700;
+        margin-bottom: 1rem;
       }
       .hero p {
         font-size: 1.2rem;
+        margin-bottom: 1.5rem;
       }
 
       /* Card features */
@@ -66,6 +81,7 @@
         border-radius: 16px;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
         transition: transform 0.2s ease;
+        background: #fff;
       }
       .feature-card:hover {
         transform: translateY(-6px);
@@ -81,11 +97,12 @@
         background-color: #1e272e;
         color: #d2dae2;
         padding: 2rem 0;
-        margin-top: 4rem;
+        margin-top: auto; /* luôn ở dưới */
       }
       footer a {
         color: #a5b1c2;
         text-decoration: none;
+        margin: 0 0.5rem;
       }
       footer a:hover {
         color: #fff;
@@ -102,22 +119,14 @@
         </a>
         <div>
           {% if user.is_authenticated %}
-          <a href="{% url 'dashboard' %}" class="btn btn-light btn-sm me-2"
-            >Dashboard</a
-          >
+          <a href="{% url 'dashboard' %}" class="btn btn-light btn-sm me-2">Dashboard</a>
           <form action="{% url 'logout' %}" method="post" class="d-inline">
             {% csrf_token %}
-            <button type="submit" class="btn btn-warning btn-sm">
-              Đăng xuất
-            </button>
+            <button type="submit" class="btn btn-warning btn-sm">Đăng xuất</button>
           </form>
           {% else %}
-          <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm me-2"
-            >Đăng nhập</a
-          >
-          <a href="{% url 'register' %}" class="btn btn-light btn-sm"
-            >Đăng ký</a
-          >
+          <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm me-2">Đăng nhập</a>
+          <a href="{% url 'register' %}" class="btn btn-light btn-sm">Đăng ký</a>
           {% endif %}
         </div>
       </div>
@@ -126,12 +135,8 @@
     <!-- Hero Section -->
     <section class="hero container mt-4">
       <h1>Giám sát nguồn nước thông minh</h1>
-      <p>
-        Theo dõi – Phân tích – Cảnh báo – Báo cáo trong một nền tảng duy nhất
-      </p>
-      <a href="{% url 'register' %}" class="btn btn-light btn-lg mt-3"
-        >Bắt đầu ngay</a
-      >
+      <p>Theo dõi – Phân tích – Cảnh báo – Báo cáo trong một nền tảng duy nhất</p>
+      <a href="{% url 'register' %}" class="btn btn-light btn-lg mt-3">Bắt đầu ngay</a>
     </section>
 
     <!-- Content -->
@@ -168,8 +173,7 @@
       <div class="container text-center">
         <p class="mb-2">&copy; 2025 Water Monitor. All rights reserved.</p>
         <div>
-          <a href="#">About</a> | <a href="#">Privacy</a> |
-          <a href="#">Contact</a>
+          <a href="#">About</a> | <a href="#">Privacy</a> | <a href="#">Contact</a>
         </div>
       </div>
     </footer>
